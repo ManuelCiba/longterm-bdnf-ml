@@ -44,20 +44,43 @@ def preprocess_and_plot(df, target_path):
                 p_values[day] = min(p_val * num_tests, 1.0)  # Apply Bonferroni correction
             
         # Create the violin plot
-        plt.figure(figsize=(10, 6))
-        sns.violinplot(
+        plt.figure(figsize=(30, 6))
+        #sns.violinplot(
+        #    x="days_after_treatment", y=feature, hue="group", 
+        #    data=df_mean, split=True, inner="box", palette="muted"
+        #)
+        sns.boxplot(
             x="days_after_treatment", y=feature, hue="group", 
-            data=df_mean, split=True, inner="box", palette="muted"
+            data=df_mean, palette="muted",
+                flierprops=dict(marker='.', markersize=4, linestyle='none', markerfacecolor='gray', alpha=0.7),  # small dot outliers
+                boxprops=dict(edgecolor='gray'),   # box border color
+                whiskerprops=dict(color='gray'),   # whisker color
+                capprops=dict(color='gray'),       # cap (end whisker) color
+                medianprops=dict(color='gray')    # median line color
         )
-        sns.swarmplot(
-            x="days_after_treatment", y=feature, hue="group", 
-            data=df_mean, dodge=True, alpha=0.5, size=5
-        )
+        #sns.stripplot(
+        #    x="days_after_treatment", y=feature, hue="group",
+        #    data=df_mean, dodge=True, alpha=0.5
+        #)
+        #sns.swarmplot(
+        #    x="days_after_treatment", y=feature, hue="group", 
+        #    data=df_mean, dodge=True, alpha=0.5, size=5
+        #)
+
+        # Add vertical lines to indicate integer day changes
+        # Get sorted unique x positions
+        x_values = sorted(df_mean['days_after_treatment'].unique())
+        # Loop through and check where integer day changes
+        for i in range(1, len(x_values)):
+            if int(x_values[i]) != int(x_values[i-1]):
+                plt.axvline(x=i-0.5, color='red', linestyle='--', alpha=0.3)
+
+
         # Increase font sizes
         plt.xlabel("Days After Treatment", fontsize=16)
         plt.ylabel(feature, fontsize=16)
         plt.title(f"{feature} by Group Over Time", fontsize=18)
-        plt.xticks(fontsize=14)
+        plt.xticks(fontsize=14, rotation=90)
         plt.yticks(fontsize=14)
         plt.legend(title="Group", fontsize=14, title_fontsize=15)
 
@@ -89,6 +112,16 @@ def _add_significance_stars_grouped(p_values, group_means, x_col, y_col):
                 x=day, y=y_max + 0.05, s=star, ha="center", color="black", fontsize=12
             )
 
+# Define custom bins for decimals
+def bin_time(x):
+    day = int(x)  # whole day
+    frac = x - day
+    if frac < 0.49:
+        return day + 0.4  # morning
+    elif frac < 0.59:
+        return day + 0.5  # noon
+    else:
+        return day + 0.6  # evening
 
 if __name__ == '__main__':
 
@@ -115,10 +148,11 @@ if __name__ == '__main__':
             # load the feature set DataFrame
             full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
             df = hd.load_csv_as_df(full_source_path)
-            # statistical test
 
             # round "days_after_treatment" to one digit 
-            df["days_after_treatment"] = df["days_after_treatment"].round(0)
+            #df["days_after_treatment"] = df["days_after_treatment"].round(1)
+            #df["days_after_treatment"] = np.floor(df["days_after_treatment"] * 10) / 10
+            df["days_after_treatment"] = df["days_after_treatment"].apply(bin_time)
 
             # Drop rows where days_after_treatment < 0
             df = df.loc[df["days_after_treatment"] >= 0].reset_index(drop=True)

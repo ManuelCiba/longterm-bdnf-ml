@@ -162,7 +162,8 @@ def preprocess_df_features_longterm_days(df_features, target_path, no_corr=False
     # Save the scaler object
     scaler_path = os.path.join(target_path, "scaler.pkl")
     with open(scaler_path, 'wb') as f:
-        pickle.dump(scaler, f)
+        pickle.dump({"scaler": scaler, "columns": columns_to_scale}, f)
+
     # save the DataFrame
     feature_path = os.path.join(target_path, 'feature_set_processed.csv')
     hd.save_df_as_csv(df_features, feature_path)
@@ -255,25 +256,27 @@ if __name__ == '__main__':
             # preprocess 
             preprocess_df_features_longterm(df_feature_set, target_path)
 
-        ############################################################
-        # FEATURE-SET 3: synchrony-curve and days (not-one-hot encoded)
-        source_path = path_experiment.replace("PATH", settings.FOLDER_NAME_feature_set_synchrony_curve_days)
-        target_path = source_path  # save to the same path but different filename   
-        # load the feature set DataFrame
-        full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
-        df_feature_set = hd.load_csv_as_df(full_source_path)
-        # preprocess 
-        preprocess_df_features_longterm_days(df_feature_set, target_path)
+        if False:
+            ############################################################
+            # FEATURE-SET 3: synchrony-curve and days (not-one-hot encoded)
+            source_path = path_experiment.replace("PATH", settings.FOLDER_NAME_feature_set_synchrony_curve_days)
+            target_path = source_path  # save to the same path but different filename   
+            # load the feature set DataFrame
+            full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
+            df_feature_set = hd.load_csv_as_df(full_source_path)
+            # preprocess 
+            preprocess_df_features_longterm_days(df_feature_set, target_path)
 
-        ############################################################
-        # FEATURE-SET 4: synchrony stats and days (not-one-hot encoded)
-        source_path = path_experiment.replace("PATH", settings.FOLDER_NAME_feature_set_synchrony_stats_days)
-        target_path = source_path  # save to the same path but different filename   
-        # load the feature set DataFrame
-        full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
-        df_feature_set = hd.load_csv_as_df(full_source_path)
-        # preprocess 
-        preprocess_df_features_longterm_days(df_feature_set, target_path)
+        if False:
+            ############################################################
+            # FEATURE-SET 4: synchrony stats and days (not-one-hot encoded)
+            source_path = path_experiment.replace("PATH", settings.FOLDER_NAME_feature_set_synchrony_stats_days)
+            target_path = source_path  # save to the same path but different filename   
+            # load the feature set DataFrame
+            full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
+            df_feature_set = hd.load_csv_as_df(full_source_path)
+            # preprocess 
+            preprocess_df_features_longterm_days(df_feature_set, target_path)
 
         ############################################################
         # FEATURE-SET 5: synchrony curve and bursts and days (not-one-hot encoded)
@@ -285,22 +288,23 @@ if __name__ == '__main__':
         # preprocess 
         preprocess_df_features_longterm_days(df_feature_set, target_path)
         
-        ############################################################
-        # FEATURE-SET 6: synchrony stats and bursts and days (not-one-hot encoded)
-        source_path = path_experiment.replace("PATH", settings.FOLDER_NAME_feature_set_synchrony_stats_bursts_days)
-        target_path = source_path  # save to the same path but different filename   
-        # load the feature set DataFrame
-        full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
-        df_feature_set = hd.load_csv_as_df(full_source_path)
-        # preprocess 
-        preprocess_df_features_longterm_days(df_feature_set, target_path)
+        if False:
+            ############################################################
+            # FEATURE-SET 6: synchrony stats and bursts and days (not-one-hot encoded)
+            source_path = path_experiment.replace("PATH", settings.FOLDER_NAME_feature_set_synchrony_stats_bursts_days)
+            target_path = source_path  # save to the same path but different filename   
+            # load the feature set DataFrame
+            full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
+            df_feature_set = hd.load_csv_as_df(full_source_path)
+            # preprocess 
+            preprocess_df_features_longterm_days(df_feature_set, target_path)
 
-        ############################################################
-        # FEATURE-SET 6: synchrony curve and bursts and days, without correlated features
-        source_path = path_experiment.replace("PATH", settings.FOLDER_NAME_feature_set_synchrony_curve_bursts_days_nocorr)
-        target_path = source_path  # save to the same path but different filename   
-        # load the feature set DataFrame
-        full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
-        df_feature_set = hd.load_csv_as_df(full_source_path)
-        # preprocess 
-        preprocess_df_features_longterm_days(df_feature_set, target_path, no_corr = True)
+            ############################################################
+            # FEATURE-SET 6: synchrony curve and bursts and days, without correlated features
+            source_path = path_experiment.replace("PATH", settings.FOLDER_NAME_feature_set_synchrony_curve_bursts_days_nocorr)
+            target_path = source_path  # save to the same path but different filename   
+            # load the feature set DataFrame
+            full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
+            df_feature_set = hd.load_csv_as_df(full_source_path)
+            # preprocess 
+            preprocess_df_features_longterm_days(df_feature_set, target_path, no_corr = True)

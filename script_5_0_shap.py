@@ -59,38 +59,6 @@ def _combine_all_shap_values(shap_values_list, class_index=1):
     combined_shap = np.concatenate(clean_shap_values_list, axis=0)
     return combined_shap
 
-def OLD_calculate_feature_change(X_train_list, y_train_list):
-    # Initialize a DataFrame to store the mean changes for each feature
-    feature_change_df = pd.DataFrame()
-
-    # Loop over each split
-    for i in range(len(X_train_list)):
-        # Get the feature data and labels for this split
-        X_train = X_train_list[i]
-        y_train = y_train_list[i]
-
-        # Calculate mean feature values for label 0 (before)
-        #before_mean = X_train[y_train.iloc[:, 0] == 0].mean()
-
-        # Calculate mean feature values for label 1 (after)
-        #after_mean = X_train[y_train.iloc[:, 0] == 1].mean()
-
-        # If y_train is a pandas Series of 0/1 labels:
-        before_mean = X_train[y_train == 0].mean()
-        after_mean  = X_train[y_train == 1].mean()
-
-        # Calculate the change (after - before)
-        change = after_mean - before_mean
-
-        # Append the changes to the feature_change_df
-        feature_change_df[f'Split_{i + 1}'] = change
-
-    # Now, feature_change_df contains the mean changes for each feature across the 9 splits
-    # Calculate the overall mean change across splits
-    overall_mean_change = feature_change_df.mean(axis=1)
-
-    return overall_mean_change
-
 def _combine_shap_values_across_splits(shap_values_list):
 
     combined_shap = _combine_all_shap_values(shap_values_list)
@@ -108,96 +76,22 @@ def _combine_shap_values_across_splits(shap_values_list):
 
     return median_shap_values, min_shap_values, max_shap_values
 
-def OLD_combined_shap_plot(model_name, shap_values_list, X_train_list, y_train_list):
-
-    # get median and min max values across splits
-    median_shap_values, min_shap_values, max_shap_values = _combine_shap_values_across_splits(shap_values_list)
-
-    # calculate feature change (if feature value went up or down)
-    change = _calculate_feature_change(X_train_list, y_train_list)
-
-    # Create a DataFrame for plotting
-    ranked_shap_df = pd.DataFrame({
-        'Median SHAP Value': median_shap_values,
-        'Min SHAP Value': min_shap_values,
-        'Max SHAP Value': max_shap_values,
-        'Change': change  # Keep the original change values to determine the color
-    })
-
-    # Sort by median SHAP values in descending order
-    ranked_shap_df = ranked_shap_df.sort_values(by='Median SHAP Value', ascending=True)
-
-    # Normalize change values to map them to colormap
-    # Use np.clip to limit the change values to a range (optional)
-    #norm_change = np.clip(ranked_shap_df['Change'], -1, 1)  # Adjust the range as necessary
-    norm_change = ranked_shap_df['Change']
-    norm_change = norm_change / np.max(norm_change) # -1 ... +1
-    norm_change = (norm_change + 1) / 2  # 0 ... 1
-
-    # Get the colormap
-    #cmap = cm.get_cmap('coolwarm', 256)  # Get a colormap with 256 levels
-    end_color = '#f70062'  # Red
-    middle_color = '#ffffff'  # white
-    start_color = '#0187fb'  # Blue
-    cmap = LinearSegmentedColormap.from_list('custom_cmap', [start_color, middle_color, end_color], N=256)
-
-    # Map the normalized change to the colormap
-    colors = cmap(norm_change)
-
-    # Plot with error bars
-    # Create subplots
-    fig, ax = plt.subplots(1, 1, figsize=(4, 16))
-
-    bars = plt.barh(ranked_shap_df.index, ranked_shap_df['Median SHAP Value'],
-                    xerr=[ranked_shap_df['Median SHAP Value'] - ranked_shap_df['Min SHAP Value'],
-                          ranked_shap_df['Max SHAP Value'] - ranked_shap_df['Median SHAP Value']],
-                    color=colors,
-                    capsize=3  # Adjust this number to change the length of the whiskers
-)
-
-    # limit number of x ticks to 3
-    ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=3))
-
-    # Remove the box around the axes
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-
-    plt.xlabel("Absolute SHAP Value", fontsize=12)
-    plt.title("Feature Ranking for " + model_name, fontsize=12)
-
-    # Create color bar for the Viridis colormap
-    cbar = plt.colorbar(cm.ScalarMappable(cmap=cmap), ax=plt.gca(), shrink=0.8)
-    cbar.set_label('Change in Feature Value', fontsize=12)
-    cbar.set_ticks([0, 0.5, 1])
-    cbar.set_ticklabels(['↓', '-', '↑'])
-    cbar.outline.set_visible(False)
-
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
-    return fig
-
-def plot_all_shap_values(base_folder, models, X_train_list, y_train_list):
+def plot_all_shap_values(base_folder, models):
     # Loop through all models
     for m in range(len(models)):
         model_name = models[m]
         print(model_name)
 
         # Define filename to load
-        full_path = os.path.join(base_folder, "shap_values_list_" + model_name + ".pkl")
+        full_path = os.path.join(base_folder, "shap_values_" + model_name + ".pkl")
 
-        shap_values_list = hd.load_pkl_as_list(full_path)
+        data = hd.load_obj_from_pkl(full_path)
+        shap_values_list = data['shap_values_list']
+        #X_train_sampled_list = data['X_train_sampled_list']
         combined_shap = _combine_shap_explanations(shap_values_list, class_index=1)
 
         output_path = os.path.join(base_folder, "SHAP_all_" + model_name + ".jpg")
         _plot_shap_values(combined_shap, output_path)
-        
-        #fig = _combined_shap_plot(model_name, shap_values_list, X_train_list, y_train_list)
-        #full_path = os.path.join(base_folder, "SHAP_all_" + model_name + ".jpg")
-        #hd.save_figure(fig, full_path)
-        #full_path = os.path.join(base_folder, "SHAP_all_" + model_name + ".pdf")
-        #hd.save_figure(fig, full_path)
 
 def _plot_shap_values(shap_values, output_path):
     # Plot the SHAP values
@@ -211,7 +105,6 @@ def _plot_shap_values(shap_values, output_path):
         shap.plots.beeswarm(shap_values[:, :, 1])  # only plot class1
     else:
         shap.plots.beeswarm(shap_values)
-    # plt.title(f"SHAP Values for Model: {model_name} (Split {i + 1})")
 
     hd.save_figure(fig, output_path)
     hd.save_figure(fig, output_path.replace("jpg", "pdf"))
@@ -250,7 +143,7 @@ def OLDplot_shap_correlation(base_folder, models):
     full_path = os.path.join(base_folder, "SHAP_correlation.pdf")
     hd.save_figure(fig, full_path)
 
-def _plot_shap_dependence(shap_values, X_train, feature_name, output_path, interaction_index=None):
+def _plot_shap_dependence(shap_values, X_train, feature_name, scaler, scaled_columns, output_path, interaction_index=None):
     """
     Generate a SHAP dependence plot for a specific feature.
 
@@ -273,11 +166,8 @@ def _plot_shap_dependence(shap_values, X_train, feature_name, output_path, inter
     most_important_feature = X_train.columns[np.argmax(mean_abs_shap)]
     print(f"Most important feature: {most_important_feature}")
 
-    # Rescale the feature values in X_train to be in unit "days" instead of 0...1
-    max_day = 9 # hard coded here for simplicity
-    min_day = 2
-    X_train_rescaled = X_train.copy()
-    X_train_rescaled[feature_name] = min_day + X_train[feature_name] * (max_day - min_day)
+    # Inverse-transform all features
+    X_train_rescaled = _inverse_transform_selected(X_train, scaler, scaled_columns)
 
     #fig, ax = plt.subplots(1, 1, figsize=(8, 6))
     shap.dependence_plot(
@@ -291,127 +181,196 @@ def _plot_shap_dependence(shap_values, X_train, feature_name, output_path, inter
     hd.save_figure(plt.gcf(), output_path)
     hd.save_figure(plt.gcf(), output_path.replace("jpg", "pdf"))
 
-def _plot_combined_shap_dependence(shap_values_list, X_train_list):
-    
+def _plot_combined_shap_dependence(shap_pkl_path, scaler, scaled_columns):
+    """
+    Combine SHAP values from multiple splits and plot combined dependence.
+    """
+    data = hd.load_obj_from_pkl(shap_pkl_path)
+    shap_values_list = data['shap_values_list']
+    X_train_sampled_list = data['X_train_sampled_list']
+
     # define which feature should be on the x axis
     feature_name = "days_after_treatment"
 
+    # combine all shap values and X_train samples
     combined_shap = _combine_all_shap_values(shap_values_list, class_index=1)
-    combined_X = pd.concat(X_train_list, axis=0)
+    combined_X = pd.concat(X_train_sampled_list, axis=0)
 
-    # Calculate the median absolute SHAP values for each feature
+    # Determine most important feature
     median_abs_shap = np.median(np.abs(combined_shap), axis=0)
-    
-    # Get the most important feature
     most_important_feature = combined_X.columns[np.argmax(median_abs_shap)]
-    print(f"Most important feature: {most_important_feature}")
+    print("Most important feature: " + most_important_feature)
 
-    # Rescale the feature values in X_train to be in unit "days" instead of 0...1
-    max_day = 9 # hard coded here for simplicity
-    min_day = 2
-    combined_X[feature_name] = min_day + combined_X[feature_name] * (max_day - min_day)
+    # Inverse scale all features using the fitted scaler
+    combined_X_rescaled = _inverse_transform_selected(combined_X, scaler, scaled_columns)
 
-    # TODO: DELETE THIS LINE
-    most_important_feature = "Spike-contrast (7.753 s)"
-    
     shap.dependence_plot(
-        "days_after_treatment",
+        feature_name,
         combined_shap,
-        combined_X,
+        combined_X_rescaled,
         interaction_index=most_important_feature,
-        show=False  # Suppress showing the plot in interactive environments
+        show=False
     )
 
     return plt.gcf()
 
-def plot_all_shap_dependence(base_folder, models, X_train_list):
+def plot_all_shap_dependence(base_folder, models, scaler, scaled_columns):
     # Loop through all models
     for m in range(len(models)):
         model_name = models[m]
         print(model_name)
 
         # Define filename to load
-        full_path = os.path.join(base_folder, "shap_values_list_" + model_name + ".pkl")
+        shap_pkl_path = os.path.join(base_folder, "shap_values_" + model_name + ".pkl")
 
-        shap_values_list = hd.load_pkl_as_list(full_path)
-        fig = _plot_combined_shap_dependence(shap_values_list, X_train_list)
+        fig = _plot_combined_shap_dependence(shap_pkl_path, scaler, scaled_columns)
 
         full_path = os.path.join(base_folder, "SHAP_all_dependence_" + model_name + ".jpg")
         hd.save_figure(fig, full_path)
 
         full_path = os.path.join(base_folder, "SHAP_all_dependence_" + model_name + ".pdf")
         hd.save_figure(fig, full_path)
-
     
-def calculate_shap_values(base_folder, models, X_train_list, df_train_results):
-
-    # Loop through all models
+def calculate_shap_values(base_folder, models, X_train_list, df_train_results, scaler, scaled_columns):
+    """
+    Calculate SHAP values for any number of models and save them to disk.
+    """
     for m in range(len(models)):
-
         model_name = models[m]
-
-        # Define filename and skip calculation if already calculated
-        full_path = os.path.join(base_folder, "shap_values_list_" + model_name + ".pkl")
+        full_path = os.path.join(base_folder, "shap_values_" + model_name + ".pkl")
+        
         if os.path.isfile(full_path):
             print("SHAP values already calculated: " + full_path)
             continue
 
         shap_values_list = []
+        X_train_sampled_list = []
 
-        # Loop through each split
         for i in range(len(X_train_list)):
-
             # Get the best model for this split
-            idx_model = (i * 7) + m
+            idx_model = (i * len(models)) + m
             split_model_row = df_train_results.iloc[idx_model]
             if model_name != split_model_row['Model']:
                 print("Wrong Model order -> Cancel calculation")
                 return False
-            best_model = split_model_row['clf_best']
 
-            # Retrieve the training data for the current split
+            best_model = split_model_row['clf_best']
             X_train = X_train_list[i]
 
-            # Create the explainer (different for each model)
-            np.random.seed(42)  # fix random seed to get reproducible results
+            # Sample rows for speed (e.g. 20 or 50 ect.)
+            X_train_sampled = X_train.sample(500, random_state=42)
+            X_train_sampled_list.append(X_train_sampled)
+
+            # Create the explainer
+            np.random.seed(42)
             if model_name in ["RF", "XGboost"]:
-                # "hclustering" to deal better with correlated features
-                # Summarize the data to 50 representative samples -> faster calculation
-                background = shap.sample(X_train, 50) 
-                #masker = shap.maskers._tabular.Tabular(background, clustering="correlation") 
-                #explainer = shap.Explainer(best_model, masker=masker)
+                background = shap.sample(X_train, 50)
                 explainer = shap.TreeExplainer(best_model, data=background, feature_perturbation="interventional")
-            if model_name in ["SVM", "LR", "KNN", "MLP"]:
+            elif model_name in ["SVM", "LR", "KNN", "MLP"]:
                 background = shap.kmeans(X_train, 50)
                 explainer = shap.KernelExplainer(best_model.predict_proba, background)
-            if model_name in ["NB"]:
+            elif model_name == "NB":
                 background = shap.sample(X_train, 50)
                 explainer = shap.Explainer(best_model.predict_proba, background)
+            else:
+                raise ValueError("Unknown model type: " + model_name)
 
-            # Calculate SHAP values
-            X_train_sampled = X_train.sample(20, random_state=42)  # speed up calculation
             shap_values = explainer(X_train_sampled)
             shap_values_list.append(shap_values)
 
-            # plot shap values (classical feature ranking)
+            # Plot individual SHAP values
             output_path = os.path.join(base_folder, "shap_" + model_name + "_split_" + str(i) + ".jpg")
             _plot_shap_values(shap_values, output_path=output_path)
 
-            # Plot SHAP dependence for `days_after_treatment`
-            output_path = os.path.join(base_folder, "shap_dependence_split_" + model_name + str(i) + ".jpg")
+            output_path_dep = os.path.join(base_folder, "shap_dependence_" + model_name + "_split_" + str(i) + ".jpg")
             try:
                 _plot_shap_dependence(
                     shap_values,
-                    X_train,
+                    X_train_sampled,
                     feature_name="days_after_treatment",
-                    output_path=output_path,
-                    interaction_index=None  # Replace with another feature for interaction if needed
+                    scaler = scaler,
+                    scaled_columns = scaled_columns,
+                    output_path=output_path_dep,
+                    interaction_index=None
                 )
-            except Exception as e: 
+            except Exception as e:
                 print(e)
 
-        # save shap_values_list
-        hd.save_list_as_pkl(shap_values_list, full_path)
+        # Save both SHAP values and sampled X_train
+        hd.save_obj_as_pkl({
+            'shap_values_list': shap_values_list,
+            'X_train_sampled_list': X_train_sampled_list
+        }, full_path)
+        print("Saved SHAP values and sampled X_train to: " + full_path)
+
+def _inverse_transform_selected(X_train, scaler, scaled_columns):
+    X_rescaled = X_train.copy()
+
+    # Apply inverse_transform only on the scaled subset
+    X_rescaled[scaled_columns] = pd.DataFrame(
+        scaler.inverse_transform(X_train[scaled_columns]),
+        columns=scaled_columns,
+        index=X_train.index
+    )
+    return X_rescaled
+
+# TODO
+def TODO_plot_shap_with_reference(combined_shap, combined_X, feature_name="days_after_treatment", class_index=1):
+    """
+    Plots a SHAP dependence plot for a feature with a horizontal reference line
+    at the mean absolute SHAP value across all features, and a bar plot ranking
+    features by mean absolute SHAP.
+    
+    Args:
+        combined_shap: np.array or shap values array, concatenated across splits
+        combined_X: pd.DataFrame, features corresponding to combined_shap
+        feature_name: str, the feature to show on the x-axis
+        class_index: int, which class for SHAP values if multiclass
+    """
+    # Convert to array if necessary (e.g., shap.Explanation object)
+    if hasattr(combined_shap, 'values'):
+        shap_values_array = combined_shap.values[..., class_index] if combined_shap.values.ndim == 3 else combined_shap.values
+    else:
+        shap_values_array = combined_shap
+
+    # Compute mean absolute SHAP for each feature
+    mean_abs_shap = np.mean(np.abs(shap_values_array), axis=0)
+    feature_importance = pd.Series(mean_abs_shap, index=combined_X.columns).sort_values(ascending=False)
+    
+    # Compute global reference line (mean absolute SHAP across all features)
+    global_mean_abs = mean_abs_shap.mean()
+    
+    print("Feature ranking by mean absolute SHAP:")
+    print(feature_importance)
+    print("Global mean absolute SHAP (reference line):", global_mean_abs)
+    
+    # Dependence plot
+    plt.figure(figsize=(10, 5))
+    shap.dependence_plot(
+        feature_name,
+        shap_values_array,
+        combined_X,
+        interaction_index=None,
+        show=False
+    )
+    
+    # Add horizontal reference line
+    plt.axhline(global_mean_abs, color='red', linestyle='--', alpha=0.5, label='Global mean |SHAP|')
+    plt.legend()
+    plt.title("SHAP Dependence with Reference Line")
+    plt.tight_layout()
+    plt.show()
+    
+    # Bar plot of feature importance ranking
+    plt.figure(figsize=(12, 6))
+    feature_importance.plot(kind='bar')
+    plt.axhline(global_mean_abs, color='red', linestyle='--', alpha=0.5, label='Global mean |SHAP|')
+    plt.ylabel("Mean Absolute SHAP Value")
+    plt.title("Feature Importance Ranking")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    
 
 if __name__ == '__main__':
     # for all machine learning folder:
@@ -439,26 +398,34 @@ if __name__ == '__main__':
 
         target_folder_full = path_experiment.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
 
+        # load scaler to inverse transform the feature values
+        scaler_path = path_experiment
+        scaler_path = scaler_path.replace(SOURCE_DATA_FOLDER, FOLDER)
+        scaler_path_full = os.path.join(scaler_path, "scaler.pkl")
+        data = hd.load_obj_from_pkl(scaler_path_full)
+        scaler = data["scaler"]
+        scaled_columns = data["columns"]
+
         # load ml results
         df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list = workflow_unpaired.load_df_results_from_hd(path_experiment)
 
         # IMPORTANT: use x_train or x_test for shap calculation? 
         # actually use x_test (=unseen data) since here we use ML as an statistical test.
         # But in x_train are more data points (=more stable results) and it does not differ too much from x_train shap results
-        # since the cross-validaiton already prevented overfitting
+        # since the cross-validation already prevented overfitting
 
         # calculate shap values
-        calculate_shap_values(target_folder_full, models, X_train_list, df_train_results)
+        calculate_shap_values(target_folder_full, models, X_train_list, df_train_results, scaler, scaled_columns)
 
         # plot all shap value dependence
         try:
-            plot_all_shap_dependence(target_folder_full, models, X_train_list)
+            plot_all_shap_dependence(target_folder_full, models, scaler, scaled_columns)
         except Exception as e:
             print(e)
 
         # plot shap all values
         try:
-            plot_all_shap_values(target_folder_full, models, X_train_list, y_train_list)
+            plot_all_shap_values(target_folder_full, models)
         except Exception as e:
             print(e)
 

@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from lib.data_handler import spiketrain_handler
 from lib.data_handler import hd
-#from lib.plots import save_figure
 import settings
 import os
 

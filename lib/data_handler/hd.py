@@ -57,24 +57,23 @@ def save_df_as_csv(df, full_path, index=False):
     #df.to_csv(full_path, sep=',', header=header, index=False)
     df.to_csv(full_path, sep=',', index=index)
 
-def save_list_as_pkl(list, full_path):
-    # check if the file ends with .pkl, if not, add it
+def save_obj_as_pkl(obj, full_path):
+    """Save any Python object to a pickle file."""
     if not full_path.endswith(".pkl"):
-        # if the file does not end with .pkl, add it
         full_path = full_path + ".pkl"
     
-    # create directory
-    result_folder = os.path.dirname(full_path)
-    os.makedirs(result_folder, exist_ok=True)
+    # create directory if it does not exist
+    os.makedirs(os.path.dirname(full_path), exist_ok=True)
     
-    # save lists as pickles format
     with open(full_path, 'wb') as f:
-        pickle.dump(list, f)
+        pickle.dump(obj, f)
 
-def load_pkl_as_list(full_path):
+
+def load_obj_from_pkl(full_path):
+    """Load any Python object from a pickle file."""
     with open(full_path, 'rb') as f:
-        list = pickle.load(f)
-    return list
+        obj = pickle.load(f)
+    return obj
 
 
 def save_figure(fig, full_path):

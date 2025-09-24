@@ -132,7 +132,6 @@ if __name__ == '__main__':
         
         # get file name of all .mat file within folder
         files = glob.glob(path_chip + '/*.mat')
-        # Important! Sort file names, as python make wrong order
         files = sorted(files)
 
         # For all files in the folder

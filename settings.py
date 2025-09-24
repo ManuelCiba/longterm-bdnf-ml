@@ -10,7 +10,7 @@ if FLAG_DATA_ISMAEL:
     #PATH_DATA_FOLDER = "/home/mc/Documents/Data/DRUG/IsmaelLozanoFlores/LongTerm/TS/"
 
     # KAI path to the data (server)
-    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-06_LSD/data/longterm_pot_ismael/TS/"
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/TS/"
 
     # Path where results will be saved
     PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "Ismael")
@@ -38,7 +38,7 @@ if FLAG_DATA_WENUS:
 
 if FLAG_DATA_BDNF:
     # KAI path to the data (server)
-    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-06_LSD/data/longterm_pot_BDNF/TS/"
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/TS/"
 
     # Path where results will be saved
     PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "BDNF")
@@ -58,12 +58,13 @@ if FLAG_DATA_BDNF:
 
 
 # Flags to control the analysis
-FLAG_PLOT = True
+FLAG_PLOT = False
 FLAG_LONGTERM = True # Set to True if you want to analyze the long-term data
 FLAG_ACUTE = False # Set to True if you want to analyze the acute data
 
 # Folder names for the results
 FOLDER_NAME_RASTERPLOTS = "0_1_rasterplots"
+FOLDER_NAME_SPIKERATES = "0_2_spikerates"
 FOLDER_NAME_split_data = "1_0_split_data"
 FOLDER_NAME_feature_synchrony = "2_0_feature_synchrony"
 FOLDER_NAME_feature_synchrony_stats = "2_0_feature_synchrony_stats"
@@ -91,5 +92,5 @@ FEATURE_SET_LIST = [
                     #FOLDER_NAME_feature_set_synchrony_stats_bursts_days,
                     #FOLDER_NAME_feature_set_synchrony_curve_bursts_days_nocorr,
     ]
-#ML_MODELS = ['RF']
-ML_MODELS = ['RF', 'XGboost', 'SVM', 'NB', 'LR', 'KNN', 'MLP']
+ML_MODELS = ['RF']
+#ML_MODELS = ['RF', 'XGboost', 'SVM', 'NB', 'LR', 'KNN', 'MLP']

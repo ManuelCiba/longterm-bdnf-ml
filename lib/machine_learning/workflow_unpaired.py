@@ -115,7 +115,6 @@ def call(models, df_features):
 
     return df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list
 
-
 def _calling_the_models(models, X_train, y_train, groups_train):
     # Convert into a 1D array (Important for some ML models)
     y_train = y_train.values.ravel()
@@ -146,7 +145,7 @@ def _calling_the_models(models, X_train, y_train, groups_train):
 def _parallel_evaluate(model_name, X_train, y_train, groups_train):
     # define number of CPU cores
     num_models = 7 
-    num_cores = -1#int(multiprocessing.cpu_count()/ (num_models*2))
+    num_cores = -1 #int(multiprocessing.cpu_count()/ (num_models*2)) # -1
     print("Number of cores used for parallel processing: " + str(num_cores))
     if model_name == 'RF':
         param_grid = {
@@ -199,19 +198,6 @@ def _parallel_evaluate(model_name, X_train, y_train, groups_train):
 
     return metrics
 
-    #return {
-    #    'Model': model_name,
-    #    'AUC': roc_mean,
-    #    'AUC std': std_roc,
-    #    'Accuracy': accuracy_mean,
-    #    'Accuracy std': std_accuracy,
-    #    'Recall': recall_mean,
-    #    'Recall std': std_recall,
-    #    'Precision': precision_mean,
-    #    'Precision std': std_precision,
-    #    'clf_best': clf
-    #}
-
 def _evaluate_model(model_name, model, param_grid, X, y, groups):
     """
     Evaluate the model using grouped cross-validation within GridSearchCV.
@@ -247,7 +233,7 @@ def _evaluate_model(model_name, model, param_grid, X, y, groups):
         refit='AUC',  # Select the model based on ROC AUC score
         cv=cv,
         return_train_score=False,
-        verbose=0, # Verbose output for debugging: 3: show all, 0: off
+        verbose=3, # Verbose output for debugging: 3: show all, 0: off
         #n_jobs=-1,  # Use all available cores for parallel processing
         pre_dispatch='2*n_jobs'  # Manage memory usage
     )
