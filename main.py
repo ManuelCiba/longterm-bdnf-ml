@@ -7,6 +7,15 @@
 # 3) Combine features into one table, also add div as a feature
 # 4) ML
 
+# How to run in background on server, so that calculation continues when vscode is closed:
+# in vscode terminal enter:
+#
+# nohup .venv/bin/python main.py > output.log 2>&1 &
+#
+# Check output.log with:
+# tail -f output.log
+
+
 import os
 import warnings
 

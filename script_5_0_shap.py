@@ -118,7 +118,7 @@ def OLDplot_shap_correlation(base_folder, models):
 
         # Define filename to load
         full_path = os.path.join(base_folder, f"shap_values_list_{model_name}.pkl")
-        shap_values_list = hd.load_pkl_as_list(full_path)
+        shap_values_list = hd.load_obj_from_pkl(full_path)
 
         # Combine SHAP values across splits to get median values
         median_shap_values, _, _ = _combine_shap_values_across_splits(shap_values_list)

@@ -1,0 +1,53 @@
+nohup: ignoring input
+joblib.externals.loky.process_executor._RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'y'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/externals/loky/process_executor.py", line 490, in _process_worker
+    r = call_item()
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/externals/loky/process_executor.py", line 291, in __call__
+    return self.fn(*self.args, **self.kwargs)
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/parallel.py", line 607, in __call__
+    return [func(*args, **kwargs) for func, args, kwargs in self.items]
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/parallel.py", line 607, in <listcomp>
+    return [func(*args, **kwargs) for func, args, kwargs in self.items]
+  File "<string>", line 42, in withinloop
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/lib/machine_learning/workflow_unpaired.py", line 43, in call
+    y = df_features['y']  # 'y' is the column with class labels
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'y'
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/main.py", line 32, in <module>
+    exec(open(os.path.join(os.getcwd(), "script_4_0_machine_learning.py")).read())
+  File "<string>", line 146, in <module>
+  File "<string>", line 111, in run_parallized
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/parallel.py", line 2072, in __call__
+    return output if self.return_generator else list(output)
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/parallel.py", line 1682, in _get_outputs
+    yield from self._retrieve()
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/parallel.py", line 1784, in _retrieve
+    self._raise_error_fast()
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/parallel.py", line 1859, in _raise_error_fast
+    error_job.get_result(self.timeout)
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/parallel.py", line 758, in get_result
+    return self._return_or_raise()
+  File "/home/mciba/Documents/2025-07_BDNF/longterm-bdnf-ml/.venv/lib/python3.10/site-packages/joblib/parallel.py", line 773, in _return_or_raise
+    raise self._result
+KeyError: 'y'

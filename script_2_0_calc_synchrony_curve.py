@@ -17,7 +17,7 @@ TARGET_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_fe
 
 def calculate_and_plot_and_save_synchrony(source_path, target_path, window_size):
     # Load the spike trains
-    binned_spike_trains_elephant = hd.load_pkl_as_list(source_path)
+    binned_spike_trains_elephant = hd.load_obj_from_pkl(source_path)
     spike_trains_elephant = spiketrain_handler.binned_to_spiketrains(binned_spike_trains_elephant)
 
     # Check if spike_trains_elephant is empty

@@ -70,7 +70,7 @@ def split_spiketrains_and_save_results(spiketrains, bin_size, window_size, windo
 
             # save split spike trains as an HDF5 file
             bst_w_full = spiketrain_handler.convert_BinnedSpikeTrainView_to_BinnedSpikeTrain(bst_w)
-            hd.save_list_as_pkl(bst_w_full, full_path)
+            hd.save_obj_as_pkl(bst_w_full, full_path)
 
             # plot spike trains and save
             if False:
