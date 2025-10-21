@@ -3,7 +3,43 @@ import quantities as pq
 
 FLAG_DATA_ISMAEL = False    # Set to True if you want to use Ismael's data
 FLAG_DATA_WENUS = False    # Set to True if you want to use WENUS data
-FLAG_DATA_BDNF = True    # Set to True if you want to use BDNF data
+FLAG_DATA_BDNF = False    # Set to True if you want to use BDNF data
+FLAG_DATA_CION = False
+FLAG_DATA_XRAY = True
+
+if FLAG_DATA_CION:
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-10-ESTRANGE/data/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "CION")
+
+    WELLS_SHAM = ['A1_Plate1', 'A2_Plate1', 'A1_Plate2', 'A2_Plate2', 'A1_Plate3', 'A2_Plate3'] 
+    WELLS_DRUG = ['A3_Plate1', 'B3_Plate1', 'A3_Plate2', 'B3_Plate2', 'A3_Plate3', 'B3_Plate3']
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20250527_000000"  
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20250527_000000" 
+
+    # Start or Organoid cultivation:06.03.2025 TB Irradiation on 80 div at GSI: 
+    # 0 Gy, 15 Gy X-rays, 15 Gy C-Ions on 27.05.2025 TB
+    # Slices from 30.05.2025 (3d a.R) TB
+    # day of plating: 30.05.2025 
+
+if FLAG_DATA_XRAY:
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-10-ESTRANGE/data/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "XRAY")
+
+    WELLS_SHAM = ['A1_Plate1', 'A2_Plate1', 'A1_Plate2', 'A2_Plate2', 'A1_Plate3', 'A2_Plate3'] 
+    WELLS_DRUG = ['B1_Plate1', 'B2_Plate1', 'B1_Plate2', 'B2_Plate2', 'B1_Plate3', 'B2_Plate3']
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20250527_000000"  
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20250527_000000" 
+
+    # Start or Organoid cultivation:06.03.2025 TB Irradiation on 80 div at GSI: 
+    # 0 Gy, 15 Gy X-rays, 15 Gy C-Ions on 27.05.2025 TB
+    # Slices from 30.05.2025 (3d a.R) TB
+    # day of plating: 30.05.2025 
 
 if FLAG_DATA_ISMAEL:
     # local path to the data (laptop)
@@ -94,11 +130,11 @@ FEATURE_SET_LIST = [
                     #FOLDER_NAME_feature_set_synchrony_stats_days,
                     #FOLDER_NAME_feature_set_synchrony_curve_bursts,
                     #FOLDER_NAME_feature_set_synchrony_stats_bursts,
-                    FOLDER_NAME_feature_set_synchrony_curve_bursts_per_day,
-                    FOLDER_NAME_feature_set_synchrony_stats_bursts_per_day,
-                    #FOLDER_NAME_feature_set_synchrony_curve_bursts_days,
-                    #FOLDER_NAME_feature_set_synchrony_stats_bursts_days,
+                    #FOLDER_NAME_feature_set_synchrony_curve_bursts_per_day,
+                    #FOLDER_NAME_feature_set_synchrony_stats_bursts_per_day,
+                    FOLDER_NAME_feature_set_synchrony_curve_bursts_days,
+                    FOLDER_NAME_feature_set_synchrony_stats_bursts_days,
                     #FOLDER_NAME_feature_set_synchrony_curve_bursts_days_nocorr,
     ]
-#ML_MODELS = ['RF']
-ML_MODELS = ['RF', 'XGboost', 'SVM', 'NB', 'LR', 'KNN', 'MLP']
+ML_MODELS = ['RF', 'XGboost', 'SVM'] 
+#ML_MODELS = ['RF', 'XGboost', 'SVM', 'NB', 'LR', 'KNN', 'MLP']

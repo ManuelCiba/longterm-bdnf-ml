@@ -145,7 +145,7 @@ def _calling_the_models(models, X_train, y_train, groups_train):
 def _parallel_evaluate(model_name, X_train, y_train, groups_train):
     # define number of CPU cores
     num_models = 7 
-    num_cores = -1 #int(multiprocessing.cpu_count()/ (num_models*2)) # -1
+    num_cores = int(multiprocessing.cpu_count()/ (num_models)) # -1
     print("Number of cores used for parallel processing: " + str(num_cores))
     if model_name == 'RF':
         param_grid = {
@@ -191,6 +191,14 @@ def _parallel_evaluate(model_name, X_train, y_train, groups_train):
             'subsample': [0.6, 0.8, 1.0],
             'colsample_bytree': [0.6, 0.8, 1.0],
             'max_depth': [3, 4, 5]
+            #'max_depth': [3, 4],
+            #'learning_rate': [0.05, 0.1],
+            #'n_estimators': [300, 500],
+            #'subsample': [0.8],
+            #'colsample_bytree': [0.8],
+            #'min_child_weight': [1],
+            #'gamma': [1, 2, 5],   # Encourage focusing on strong splits only
+            #'reg_lambda': [1, 5, 10],  # L2 regularization (suppress weak features)
         }
         model = XGBClassifier(random_state=1234)
 
