@@ -1,62 +1,29 @@
 import os
 import quantities as pq
 
-FLAG_DATA_ISMAEL = False    # Set to True if you want to use Ismael's data
+FLAG_DATA_ISMAEL = True    # Set to True if you want to use Ismael's data
 FLAG_DATA_WENUS = False    # Set to True if you want to use WENUS data
 FLAG_DATA_BDNF = False    # Set to True if you want to use BDNF data
-FLAG_DATA_CION = False
-FLAG_DATA_XRAY = True
-
-if FLAG_DATA_CION:
-    # KAI path to the data (server)
-    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-10-ESTRANGE/data/TS/"
-
-    # Path where results will be saved
-    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "CION")
-
-    WELLS_SHAM = ['A1_Plate1', 'A2_Plate1', 'A1_Plate2', 'A2_Plate2', 'A1_Plate3', 'A2_Plate3'] 
-    WELLS_DRUG = ['A3_Plate1', 'B3_Plate1', 'A3_Plate2', 'B3_Plate2', 'A3_Plate3', 'B3_Plate3']
-    DATE_TIME_DRUG_TREATMENT_STARTED = "20250527_000000"  
-    DATE_TIME_DRUG_TREATMENT_FINISHED = "20250527_000000" 
-
-    # Start or Organoid cultivation:06.03.2025 TB Irradiation on 80 div at GSI: 
-    # 0 Gy, 15 Gy X-rays, 15 Gy C-Ions on 27.05.2025 TB
-    # Slices from 30.05.2025 (3d a.R) TB
-    # day of plating: 30.05.2025 
-
-if FLAG_DATA_XRAY:
-    # KAI path to the data (server)
-    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-10-ESTRANGE/data/TS/"
-
-    # Path where results will be saved
-    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "XRAY")
-
-    WELLS_SHAM = ['A1_Plate1', 'A2_Plate1', 'A1_Plate2', 'A2_Plate2', 'A1_Plate3', 'A2_Plate3'] 
-    WELLS_DRUG = ['B1_Plate1', 'B2_Plate1', 'B1_Plate2', 'B2_Plate2', 'B1_Plate3', 'B2_Plate3']
-    DATE_TIME_DRUG_TREATMENT_STARTED = "20250527_000000"  
-    DATE_TIME_DRUG_TREATMENT_FINISHED = "20250527_000000" 
-
-    # Start or Organoid cultivation:06.03.2025 TB Irradiation on 80 div at GSI: 
-    # 0 Gy, 15 Gy X-rays, 15 Gy C-Ions on 27.05.2025 TB
-    # Slices from 30.05.2025 (3d a.R) TB
-    # day of plating: 30.05.2025 
 
 if FLAG_DATA_ISMAEL:
     # local path to the data (laptop)
     #PATH_DATA_FOLDER = "/home/mc/Documents/Data/DRUG/IsmaelLozanoFlores/LongTerm/TS/"
 
     # KAI path to the data (server)
-    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/TS/"
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/Ismael/TS/"
 
     # Path where results will be saved
     PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "Ismael")
 
     # Ismael's data:
-    # DRUG (10µM) and SHAM (1% DMSO) well definitions
-    WELLS_SHAM = ['A2', 'A3', 'A6', 'B1', 'B3', 'B4', 'B5', 'C5', 'D1', 'D2', 'D5'] # A1 excluded, because no baseline data available
+    # DRUG (10µM LSD) and SHAM (1% DMSO) well definitions
+    WELLS_SHAM = ['A1', 'A2', 'A3', 'A6', 'B1', 'B3', 'B4', 'B5', 'C5', 'D1', 'D2', 'D5'] # A1 excluded, because no baseline data available
     WELLS_DRUG = ['A4', 'A5', 'B2', 'B6', 'C1', 'C2', 'C3', 'C4', 'C6', 'D3', 'D4', 'D6']
     DATE_TIME_DRUG_TREATMENT_STARTED = "20231114_143512"  # At this time DRUG was present. 20231114_143512 = 14.11.2023, 14:35:12
     DATE_TIME_DRUG_TREATMENT_FINISHED = "20231115_140043"  # At this time DRUG was already washed out. 20231115_140043 = 15.11.2023, 14:00:43
+    DATE_TIME_LAST_RECORDING = "20231122_000000" # TODO: just for testing, set to "" for all data
+    LABEL_SHAM = "Ctrl"
+    LABEL_DRUG = "LSD"
 
 if FLAG_DATA_WENUS:
     # KAI path to the data (server)
@@ -71,10 +38,13 @@ if FLAG_DATA_WENUS:
     WELLS_DRUG = ['C1w', 'C2w', 'C3w', 'C4w', 'C5w', 'D1w', 'D2w'] # maybe exclud: C1, D2
     DATE_TIME_DRUG_TREATMENT_STARTED = "20230726_000000"  # TODO: check the exact time when DRUG was present.
     DATE_TIME_DRUG_TREATMENT_FINISHED = "20230731_000000"  # TODO: check the exact time when DRUG was washed out
+    DATE_TIME_LAST_RECORDING = ""
+    LABEL_SHAM = "Ctrl"
+    LABEL_DRUG = "LSD"
 
 if FLAG_DATA_BDNF:
     # KAI path to the data (server)
-    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/TS/"
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/BDNF/TS/"
 
     # Path where results will be saved
     PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "BDNF")
@@ -91,7 +61,9 @@ if FLAG_DATA_BDNF:
                  'A3_Plate1', 'A3_Plate2', 'A3_Plate3']
     DATE_TIME_DRUG_TREATMENT_STARTED = "20250613_124000"  # TODO: check the exact time when DRUG was present.
     DATE_TIME_DRUG_TREATMENT_FINISHED = "20250616_000000"  # TODO: check the exact time when DRUG was washed out
-
+    DATE_TIME_LAST_RECORDING = "20250626_000000"  # Last recording taken on 20.06.2025
+    LABEL_SHAM = "Ctrl"
+    LABEL_DRUG = "BDNF 50ng/ml"
 
 # Flags to control the analysis
 FLAG_PLOT = False
@@ -102,20 +74,15 @@ FLAG_ACUTE = False # Set to True if you want to analyze the acute data
 FOLDER_NAME_RASTERPLOTS = "0_1_rasterplots"
 FOLDER_NAME_SPIKERATES = "0_2_spikerates"
 FOLDER_NAME_split_data = "1_0_split_data"
-FOLDER_NAME_feature_synchrony = "2_0_feature_synchrony"
-FOLDER_NAME_feature_synchrony_stats = "2_0_feature_synchrony_stats"
-FOLDER_NAME_feature_bursts = "2_2_feature_bursts"
-FOLDER_NAME_feature_set_synchrony_curve = "3_0_feature_set_synchrony_curve"
-FOLDER_NAME_feature_set_synchrony_stats = "3_0_feature_set_synchrony_stats"
-FOLDER_NAME_feature_set_synchrony_curve_days = "3_0_feature_set_synchrony_curve_days"
-FOLDER_NAME_feature_set_synchrony_stats_days = "3_0_feature_set_synchrony_stats_days"
+FOLDER_NAME_feature_spikes = "2_0_feature_spikes"
+FOLDER_NAME_feature_bursts = "2_1_feature_bursts"
+FOLDER_NAME_feature_networkbursts = "2_2_feature_networkbursts"
+FOLDER_NAME_feature_synchrony = "2_3_feature_synchrony"
+FOLDER_NAME_feature_synchrony_stats = "2_4_feature_synchrony_stats"
+
 FOLDER_NAME_feature_set_synchrony_curve_bursts = "3_0_feature_set_synchrony_curve_bursts"
 FOLDER_NAME_feature_set_synchrony_stats_bursts = "3_0_feature_set_synchrony_stats_bursts"
-FOLDER_NAME_feature_set_synchrony_curve_bursts_per_day = "3_0_feature_set_synchrony_curve_bursts_per_day"
-FOLDER_NAME_feature_set_synchrony_stats_bursts_per_day = "3_0_feature_set_synchrony_stats_bursts_per_day"
-FOLDER_NAME_feature_set_synchrony_curve_bursts_days = "3_0_feature_set_synchrony_curve_bursts_days"
-FOLDER_NAME_feature_set_synchrony_stats_bursts_days = "3_0_feature_set_synchrony_stats_bursts_days"
-FOLDER_NAME_feature_set_synchrony_curve_bursts_days_nocorr = "3_0_feature_set_synchrony_curve_bursts_days_nocorr"
+
 FOLDER_NAME_statistics = "6_0_statistics"
 
 # Parameter which will be calculated
@@ -124,17 +91,13 @@ BIN_SIZES = [1 * pq.ms] #,10 * pq.ms, 100 * pq.ms]
 WINDOW_SIZES = [240 * pq.s]#[60 * pq.s, 120 * pq.s, 240 * pq.s]  # 30 s excluded, took too long.  600 * pq.s excluded, not enough data points for 10 fold cross validation
 WINDOW_OVERLAPS = [0.75] # 0.5 = 50% overlap
 FEATURE_SET_LIST = [
-                    #FOLDER_NAME_feature_set_synchrony_curve,
-                    #FOLDER_NAME_feature_set_synchrony_stats,
-                    #FOLDER_NAME_feature_set_synchrony_curve_days,
-                    #FOLDER_NAME_feature_set_synchrony_stats_days,
-                    #FOLDER_NAME_feature_set_synchrony_curve_bursts,
-                    #FOLDER_NAME_feature_set_synchrony_stats_bursts,
-                    #FOLDER_NAME_feature_set_synchrony_curve_bursts_per_day,
-                    #FOLDER_NAME_feature_set_synchrony_stats_bursts_per_day,
-                    FOLDER_NAME_feature_set_synchrony_curve_bursts_days,
-                    FOLDER_NAME_feature_set_synchrony_stats_bursts_days,
-                    #FOLDER_NAME_feature_set_synchrony_curve_bursts_days_nocorr,
+                    FOLDER_NAME_feature_set_synchrony_curve_bursts,
+                    FOLDER_NAME_feature_set_synchrony_stats_bursts,
     ]
-ML_MODELS = ['RF', 'XGboost', 'SVM'] 
+
+#ML_MODELS = ['XGboost', 'LightGBM', 'CatBoost']
+ML_MODELS = ['XGboost', 'CatBoost']
+#ML_MODELS = ['CatBoost']
+#ML_MODELS = ['XGboost']
+#ML_MODELS = ['RF', 'XGboost'] 
 #ML_MODELS = ['RF', 'XGboost', 'SVM', 'NB', 'LR', 'KNN', 'MLP']

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from lib.machine_learning import workflow_unpaired
+from lib.machine_learning import workflow_unpaired_optatune as workflow_unpaired
 from lib.data_handler import folder_structure
 from lib.data_handler import hd
 import settings
@@ -20,6 +20,147 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 import matplotlib.cm as cm
+from scipy.cluster.hierarchy import linkage, fcluster
+import re
+
+
+
+
+def plot_feature_correlation(corr, title="Feature Correlation Matrix", figsize=(12, 10), save_path=None):
+
+    n_features = len(corr.columns)
+
+    # Scale figure size with number of features
+    fig_size = max(12, n_features * 0.25)
+
+    plt.figure(figsize=(fig_size, fig_size))
+
+    ax = sns.heatmap(
+        corr,
+        vmin=-1,
+        vmax=1,
+        cmap="coolwarm",
+        center=0,
+        square=True,
+        xticklabels=corr.columns,
+        yticklabels=corr.columns,
+        cbar_kws={"shrink": 0.8}
+    )
+
+    # Smaller font
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90, fontsize=8)
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=8)
+
+    # Increase padding
+    plt.subplots_adjust(left=0.3, bottom=0.3)
+
+    # Colorbar formatting
+    cbar = ax.collections[0].colorbar
+    cbar.set_ticks([-1, -0.5, 0, 0.5, 1])
+    cbar.set_ticklabels(["-1", "-0.5", "0", "0.5", "1"])
+
+    if save_path:
+        hd.save_figure(plt.gcf(), save_path)
+
+    return corr
+
+def _collapse_shap_by_group(shap_expl, feature_groups):
+    values = shap_expl.values
+    base_values = shap_expl.base_values
+    data = shap_expl.data
+    feature_names = list(shap_expl.feature_names)
+
+    shap_df = pd.DataFrame(values, columns=feature_names)
+    data_df = pd.DataFrame(data, columns=feature_names)
+
+    grouped_shap = {}
+    grouped_data = {}
+
+    for group_name, group_features in feature_groups.items():
+        valid_feats = [f for f in group_features if f in shap_df.columns]
+        if not valid_feats:
+            continue
+        # Sum SHAP values per sample
+        grouped_shap[group_name] = shap_df[valid_feats].sum(axis=1)
+        # Optional: mean (or first) raw feature value for plotting (color bar)
+        grouped_data[group_name] = data_df[valid_feats].mean(axis=1)
+
+    grouped_shap_df = pd.DataFrame(grouped_shap)
+    grouped_data_df = pd.DataFrame(grouped_data)
+
+    return shap.Explanation(
+        values=grouped_shap_df.values,
+        base_values=base_values,
+        data=grouped_data_df.values,
+        feature_names=list(grouped_shap_df.columns)
+    )
+
+def _generate_group_names(feature_groups):
+    """
+    feature_groups: dict {group_id: [feature1, feature2, ...]}
+    returns: dict {group_id: readable_group_name}
+    """
+    group_names = {}
+
+    for group_id, features in feature_groups.items():
+        features = sorted(features)
+
+        if len(features) == 1:
+            group_names[group_id] = features[0]
+            continue
+
+        # Try to detect same base feature with different numeric values in parentheses
+        base_names = []
+        values = []
+
+        pattern = re.compile(r"^(.*?)(?:\s*\(([\d\.]+)\s*s\))?$")
+
+        for f in features:
+            match = pattern.match(f)
+            if match:
+                base_names.append(match.group(1).strip())
+                if match.group(2) is not None:
+                    values.append(float(match.group(2)))
+            else:
+                base_names.append(f)
+
+        # Check if all base names are identical and we extracted numbers
+        if len(set(base_names)) == 1 and len(values) == len(features):
+            base = base_names[0]
+            min_v = min(values)
+            max_v = max(values)
+            group_names[group_id] = f"{base} ({min_v:.2f} – {max_v:.2f} s)"
+        else:
+            # Fallback: first feature + count
+            group_names[group_id] = f"{features[0]} (+{len(features)-1})"
+
+    return group_names
+
+def calculate_correlation_and_feature_groups(df_features):
+    
+
+    # drop non-feature columns and calculate correlation matrix
+    corr = df_features.drop(columns=['y', 'chip', 'days_after_treatment']).corr(method='spearman')
+
+    # cluster features based on correlation
+    distance = 1 - np.abs(corr)
+    Z = linkage(distance, method='average')
+    clusters = fcluster(Z, t=0.3, criterion='distance')  # t=0.3 -> >0.7 correlation belongs together
+
+    # Build feature groups
+    feature_groups = {}
+    for feature, cluster_id in zip(corr.columns, clusters):
+        feature_groups.setdefault(cluster_id, []).append(feature)
+
+    # Generate readable group names 
+    group_names = _generate_group_names(feature_groups)
+
+    # replace the group ids with the genenerated group names
+    feature_groups_named = {
+        group_names[group_id]: features
+        for group_id, features in feature_groups.items()
+        }
+    return feature_groups_named, corr
 
 def _combine_shap_explanations(shap_values_list, class_index=1):
     """
@@ -33,8 +174,13 @@ def _combine_shap_explanations(shap_values_list, class_index=1):
         values = expl.values
         if values.ndim == 3:  # multiclass
             values = values[:, :, class_index]
+
+        base_values = expl.base_values
+        if np.ndim(base_values) > 1:
+            base_values = base_values[:, class_index]
+        
         all_values.append(values)
-        all_base_values.append(expl.base_values)
+        all_base_values.append(base_values)
         all_data.append(expl.data)
 
     combined = shap.Explanation(
@@ -76,22 +222,30 @@ def _combine_shap_values_across_splits(shap_values_list):
 
     return median_shap_values, min_shap_values, max_shap_values
 
-def plot_all_shap_values(base_folder, models):
-    # Loop through all models
-    for m in range(len(models)):
-        model_name = models[m]
-        print(model_name)
+def plot_all_shap_values(base_folder, model_name, feature_groups=None):
 
-        # Define filename to load
-        full_path = os.path.join(base_folder, "shap_values_" + model_name + ".pkl")
+    # TODO Here mean over all windows? (currently each window is one data point in the shap plot)
+    # if yes, use chip_train_list for this
 
-        data = hd.load_obj_from_pkl(full_path)
-        shap_values_list = data['shap_values_list']
-        #X_train_sampled_list = data['X_train_sampled_list']
-        combined_shap = _combine_shap_explanations(shap_values_list, class_index=1)
+    # Define filename to load
+    full_path = os.path.join(base_folder, "shap_values_" + model_name + ".pkl")
 
+    data = hd.load_obj_from_pkl(full_path)
+    shap_values_list = data['shap_values_list']
+    #X_train_sampled_list = data['X_train_sampled_list']
+    combined_shap = _combine_shap_explanations(shap_values_list, class_index=1)
+
+    # Aggregate SHAP values by feature groups if provided
+    if feature_groups is not None:
+        grouped_shap_values = _collapse_shap_by_group(combined_shap, feature_groups)
+        print(grouped_shap_values)
+        combined_shap = grouped_shap_values
+        output_path = os.path.join(base_folder, "SHAP_all_grouped_" + model_name + ".jpg")
+    else:
         output_path = os.path.join(base_folder, "SHAP_all_" + model_name + ".jpg")
-        _plot_shap_values(combined_shap, output_path)
+    
+    _plot_shap_values(combined_shap, output_path)
+    _plot_shap_values(combined_shap, output_path.replace("jpg", "pdf"))
 
 def _plot_shap_values(shap_values, output_path):
     # Plot the SHAP values
@@ -106,8 +260,9 @@ def _plot_shap_values(shap_values, output_path):
     else:
         shap.plots.beeswarm(shap_values)
 
+
     hd.save_figure(fig, output_path)
-    hd.save_figure(fig, output_path.replace("jpg", "pdf"))
+    #hd.save_figure(fig, output_path.replace("jpg", "pdf"))
 
 def OLDplot_shap_correlation(base_folder, models):
     shap_model_list = []
@@ -231,77 +386,159 @@ def plot_all_shap_dependence(base_folder, models, scaler, scaled_columns):
         full_path = os.path.join(base_folder, "SHAP_all_dependence_" + model_name + ".pdf")
         hd.save_figure(fig, full_path)
     
-def calculate_shap_values(base_folder, models, X_train_list, df_train_results, scaler, scaled_columns):
+def OLDcalculate_shap_values(base_folder, model_name, X_train_list, df_train_results):
     """
-    Calculate SHAP values for any number of models and save them to disk.
+    Calculate SHAP values for a single model and save them to disk.
     """
-    for m in range(len(models)):
-        model_name = models[m]
-        full_path = os.path.join(base_folder, "shap_values_" + model_name + ".pkl")
-        
-        if os.path.isfile(full_path):
-            print("SHAP values already calculated: " + full_path)
-            continue
+    full_path = os.path.join(base_folder, f"shap_values_{model_name}.pkl")
 
-        shap_values_list = []
-        X_train_sampled_list = []
+    if os.path.isfile(full_path):
+        print("SHAP values already calculated: " + full_path)
+        return True
 
-        for i in range(len(X_train_list)):
-            # Get the best model for this split
-            idx_model = (i * len(models)) + m
-            split_model_row = df_train_results.iloc[idx_model]
-            if model_name != split_model_row['Model']:
-                print("Wrong Model order -> Cancel calculation")
-                return False
+    shap_values_list = []
+    X_train_sampled_list = []
 
-            best_model = split_model_row['clf_best']
-            X_train = X_train_list[i]
+    # Filter rows for this model only
+    df_model_results = df_train_results[df_train_results['Model'] == model_name].reset_index(drop=True)
 
-            # Sample rows for speed (e.g. 20 or 50 ect.)
-            X_train_sampled = X_train.sample(500, random_state=42)
-            X_train_sampled_list.append(X_train_sampled)
+    if len(df_model_results) != len(X_train_list):
+        print("Mismatch between number of splits and model results.")
+        return False
 
-            # Create the explainer
-            np.random.seed(42)
-            if model_name in ["RF", "XGboost"]:
-                background = shap.sample(X_train, 50)
-                explainer = shap.TreeExplainer(best_model, data=background, feature_perturbation="interventional")
-            elif model_name in ["SVM", "LR", "KNN", "MLP"]:
-                background = shap.kmeans(X_train, 50)
-                explainer = shap.KernelExplainer(best_model.predict_proba, background)
-            elif model_name == "NB":
-                background = shap.sample(X_train, 50)
-                explainer = shap.Explainer(best_model.predict_proba, background)
-            else:
-                raise ValueError("Unknown model type: " + model_name)
+    for i in range(len(X_train_list)):
+        split_model_row = df_model_results.iloc[i]
+        best_model = split_model_row['clf_best']
+        X_train = X_train_list[i]
 
+        # Sample rows for speed if desired
+        X_train_sampled = X_train  # or X_train.sample(500, random_state=42)
+        X_train_sampled_list.append(X_train_sampled)
+
+        # Create the explainer
+        np.random.seed(42)
+        if model_name in ["RF"]:
+            background = shap.sample(X_train, 50)
+            explainer = shap.TreeExplainer(best_model, data=background, feature_perturbation="interventional")
+        elif model_name in ["XGboost", "LightGBM", "CatBoost"]:
+            background = shap.sample(X_train, 50)
+            explainer = shap.TreeExplainer(best_model, data=background, feature_perturbation="interventional", model_output="probability")
+        elif model_name in ["SVM", "LR", "KNN", "MLP"]:
+            background = shap.kmeans(X_train, 50)
+            explainer = shap.KernelExplainer(best_model.predict_proba, background)
+        elif model_name == "NB":
+            background = shap.sample(X_train, 50)
+            explainer = shap.Explainer(best_model.predict_proba, background)
+        else:
+            raise ValueError("Unknown model type: " + model_name)
+
+        if model_name in ["RF", "XGboost", "LightGBM", "CatBoost"]:
+            shap_values = explainer(X_train_sampled, check_additivity=False)
+        else:
             shap_values = explainer(X_train_sampled)
-            shap_values_list.append(shap_values)
+        shap_values_list.append(shap_values)
 
-            # Plot individual SHAP values
-            output_path = os.path.join(base_folder, "shap_" + model_name + "_split_" + str(i) + ".jpg")
-            _plot_shap_values(shap_values, output_path=output_path)
+        # Plot individual SHAP values
+        output_path = os.path.join(base_folder, f"shap_{model_name}_split_{i}.jpg")
+        _plot_shap_values(shap_values, output_path=output_path)
 
-            output_path_dep = os.path.join(base_folder, "shap_dependence_" + model_name + "_split_" + str(i) + ".jpg")
-            try:
-                _plot_shap_dependence(
-                    shap_values,
-                    X_train_sampled,
-                    feature_name="days_after_treatment",
-                    scaler = scaler,
-                    scaled_columns = scaled_columns,
-                    output_path=output_path_dep,
-                    interaction_index=None
-                )
-            except Exception as e:
-                print(e)
+        output_path_dep = os.path.join(base_folder, f"shap_dependence_{model_name}_split_{i}.jpg")
+        #try:
+        #    _plot_shap_dependence(
+        #        shap_values,
+        #        X_train_sampled,
+        #        feature_name="days_after_treatment",
+        #        output_path=output_path_dep,
+        #        interaction_index=None
+        #    )
+        #except Exception as e:
+        #    print(e)
 
-        # Save both SHAP values and sampled X_train
-        hd.save_obj_as_pkl({
-            'shap_values_list': shap_values_list,
-            'X_train_sampled_list': X_train_sampled_list
-        }, full_path)
-        print("Saved SHAP values and sampled X_train to: " + full_path)
+    # Save both SHAP values and sampled X_train
+    hd.save_obj_as_pkl({
+        'shap_values_list': shap_values_list,
+        'X_train_sampled_list': X_train_sampled_list
+    }, full_path)
+    print("Saved SHAP values and sampled X_train to: " + full_path)
+
+    return True
+
+def calculate_shap_values(base_folder, model_name, X_train_list, chip_train_list, df_train_results):
+    """
+    Calculate SHAP values for a single model on outer test sets and save them to disk.
+    Stores chip IDs for subject-level aggregation.
+    """
+    full_path = os.path.join(base_folder, f"shap_values_{model_name}.pkl")
+
+    if os.path.isfile(full_path):
+        print("SHAP values already calculated: " + full_path)
+        return True
+
+    shap_values_list = []
+    X_train_sampled_list = []
+    chip_id_list = []
+
+    # Filter rows for this model only
+    df_model_results = df_train_results[df_train_results['Model'] == model_name].reset_index(drop=True)
+
+    if len(df_model_results) != len(X_train_list):
+        print("Mismatch between number of splits and model results.")
+        return False
+
+    for i in range(len(X_train_list)):
+        split_model_row = df_model_results.iloc[i]
+        best_model = split_model_row['clf_best']
+        X_train = X_train_list[i]
+        chip_ids = chip_train_list[i]  # array of chip IDs (should all be same for LOGO)
+
+        # Sample rows if desired (usually NOT for test SHAP)
+        X_train_sampled = X_train
+        X_train_sampled_list.append(X_train_sampled)
+        chip_id_list.append(chip_ids)
+
+        # Create the explainer
+        np.random.seed(42)
+        if model_name in ["RF"]:
+            background = shap.sample(X_train, 50)
+            explainer = shap.TreeExplainer(best_model, data=background, feature_perturbation="interventional")
+        elif model_name in ["XGboost", "LightGBM", "CatBoost"]:
+            background = shap.sample(X_train, 50)
+            explainer = shap.TreeExplainer(
+                best_model,
+                data=background,
+                feature_perturbation="interventional",
+                model_output="probability"
+            )
+        elif model_name in ["SVM", "LR", "KNN", "MLP"]:
+            background = shap.kmeans(X_train, 50)
+            explainer = shap.KernelExplainer(best_model.predict_proba, background)
+        elif model_name == "NB":
+            background = shap.sample(X_train, 50)
+            explainer = shap.Explainer(best_model.predict_proba, background)
+        else:
+            raise ValueError("Unknown model type: " + model_name)
+
+        # Compute SHAP
+        if model_name in ["RF", "XGboost", "LightGBM", "CatBoost"]:
+            shap_values = explainer(X_train_sampled, check_additivity=False)
+        else:
+            shap_values = explainer(X_train_sampled)
+
+        shap_values_list.append(shap_values)
+
+        # Plot individual SHAP values
+        output_path = os.path.join(base_folder, f"shap_{model_name}_split_{i}.jpg")
+        _plot_shap_values(shap_values, output_path=output_path)
+
+    # Save SHAP values, test data, and chip IDs
+    hd.save_obj_as_pkl({
+        'shap_values_list': shap_values_list,
+        'X_train_sampled_list': X_train_sampled_list,
+        'chip_id_list': chip_id_list
+    }, full_path)
+
+    print("Saved SHAP values and chip IDs to: " + full_path)
+    return True
 
 def _inverse_transform_selected(X_train, scaler, scaled_columns):
     X_rescaled = X_train.copy()
@@ -372,6 +609,21 @@ def TODO_plot_shap_with_reference(combined_shap, combined_X, feature_name="days_
     plt.show()
     
 
+def _get_path_experiment_list():
+    # define parameter
+    bin_sizes = settings.BIN_SIZES
+    window_sizes = settings.WINDOW_SIZES
+    window_overlaps = settings.WINDOW_OVERLAPS
+
+    path_experiment_list = folder_structure.generate_paths(target_data_folder=SOURCE_DATA_FOLDER,
+                                                           bin_sizes=bin_sizes,
+                                                           window_sizes=window_sizes,
+                                                           window_overlaps=window_overlaps,
+                                                           chip_names=[],
+                                                           groups=[])
+
+    return path_experiment_list
+
 if __name__ == '__main__':
     # for all machine learning folder:
     for FOLDER in settings.FEATURE_SET_LIST:
@@ -381,53 +633,60 @@ if __name__ == '__main__':
         SOURCE_DATA_FOLDER = FOLDER.replace("0_feature_set", "1_ML")
         TARGET_DATA_FOLDER = FOLDER.replace("0_feature_set", "2_SHAP")
 
-        source_folder = os.path.join(settings.PATH_RESULTS_FOLDER, SOURCE_DATA_FOLDER)
-        target_folder = os.path.join(settings.PATH_RESULTS_FOLDER, TARGET_DATA_FOLDER)
+        # get paths of all experiments
+        path_experiment_list = _get_path_experiment_list()
 
-        # Define parameter set for which SHAP will be calculated
-        bin_size = 1 * pq.ms
-        window_size = 240 * pq.s
-        window_overlap = 0.75
-        models = settings.ML_MODELS
+        # for all experiments
+        for path_experiment in path_experiment_list:
 
-        # define path where df_results are stored
-        path_experiment = os.path.join(source_folder,
-                                     f"bin_{bin_size}",
-                                     f"window_{window_size}",
-                                     f"overlap_{window_overlap}")
+            # define path of feature-set (needed for correlation and feature grouping)
+            feature_path = path_experiment.replace(SOURCE_DATA_FOLDER, FOLDER)
+            # define source path
+            full_path = os.path.join(feature_path, 'feature_set_preprocessed.csv')
+            # load the feature dataframes
+            df_features = hd.load_csv_as_df(full_path, index_col=False)
+            feature_groups, corr = calculate_correlation_and_feature_groups(df_features)
+            corr_path = os.path.join(path_experiment.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER), "feature_correlation_matrix.jpg")
+            plot_feature_correlation(corr, save_path=corr_path)
 
-        target_folder_full = path_experiment.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
+            # get all folder names in the source path
+            source_path = path_experiment
+            models = [f for f in os.listdir(source_path) if os.path.isdir(os.path.join(source_path, f))]
+            
+            for model in models:
+                
+                model_path = os.path.join(source_path, model)
+                days = [f for f in os.listdir(model_path) if os.path.isdir(os.path.join(model_path, f))]
+            
+                for day in days:
 
-        # load scaler to inverse transform the feature values
-        scaler_path = path_experiment
-        scaler_path = scaler_path.replace(SOURCE_DATA_FOLDER, FOLDER)
-        scaler_path_full = os.path.join(scaler_path, "scaler.pkl")
-        data = hd.load_obj_from_pkl(scaler_path_full)
-        scaler = data["scaler"]
-        scaled_columns = data["columns"]
+                    day_path = os.path.join(model_path, day)
 
-        # load ml results
-        df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list = workflow_unpaired.load_df_results_from_hd(path_experiment)
+                    target_path = day_path.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
 
-        # IMPORTANT: use x_train or x_test for shap calculation? 
-        # actually use x_test (=unseen data) since here we use ML as an statistical test.
-        # But in x_train are more data points (=more stable results) and it does not differ too much from x_train shap results
-        # since the cross-validation already prevented overfitting
+                    # load ml results
+                    df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired.load_df_results_from_hd(day_path)
 
-        # calculate shap values
-        calculate_shap_values(target_folder_full, models, X_train_list, df_train_results, scaler, scaled_columns)
+                    # IMPORTANT: use x_train or x_test for shap calculation? 
+                    # actually use x_test (=unseen data) since here we use ML as an statistical test.
+                    # But in x_train are more data points (=more stable results) and it does not differ too much from x_train shap results
+                    # since the cross-validation already prevented overfitting
 
-        # plot all shap value dependence
-        try:
-            plot_all_shap_dependence(target_folder_full, models, scaler, scaled_columns)
-        except Exception as e:
-            print(e)
+                    # calculate shap values
+                    #OLDcalculate_shap_values(target_path, model, X_train_list, df_train_results)
+                    calculate_shap_values(target_path, model, X_train_list, chip_train_list, df_train_results)
 
-        # plot shap all values
-        try:
-            plot_all_shap_values(target_folder_full, models)
-        except Exception as e:
-            print(e)
+                    # plot all shap value dependence
+                    #try:
+                    #    plot_all_shap_dependence(target_folder_full, models)
+                    #except Exception as e:
+                    #    print(e)
 
-        # plot shap correlation
-        #plot_shap_correlation(target_folder, models)
+                    # plot shap all values
+                    try:
+                        plot_all_shap_values(target_path, model, feature_groups)
+                    except Exception as e:
+                        print(e)
+
+                    # plot shap correlation
+                    #plot_shap_correlation(target_folder, models)

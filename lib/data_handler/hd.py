@@ -76,11 +76,12 @@ def load_obj_from_pkl(full_path):
     return obj
 
 
-def save_figure(fig, full_path):
+def save_figure(fig, full_path, verbose=True):
 
     # create directory
     result_folder = os.path.dirname(full_path)
     os.makedirs(result_folder, exist_ok=True)
 
     fig.savefig(full_path, bbox_inches='tight', dpi=600)
-    print("    Saved: " + full_path)
+    if verbose:
+        print("    Saved: " + full_path)

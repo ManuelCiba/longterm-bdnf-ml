@@ -29,22 +29,77 @@ def apply_minimum_firing_rate_filter(spiketrains, min_fr=0.1 * pq.Hz):
     for st in spiketrains:
         # Calculate firing rate as spikes per second
         duration = (st.t_stop - st.t_start).rescale(pq.s)  # Convert to seconds
-        firing_rate = len(st) / duration
+        st_non_nan = st.magnitude[~np.isnan(st.magnitude)]
+        firing_rate = len(st_non_nan) / duration
         if firing_rate >= min_fr:
             filtered_spiketrains.append(st)
         else:
             # Create a "NaN" spike train with the same time range
-            nan_spiketrain = neo.SpikeTrain(
-                np.array([np.nan]) * pq.s,  # Replace spikes with NaN
-                t_start=st.t_start,
-                t_stop=st.t_stop,
-                units=st.units
-            )
+            nan_spiketrain = st.copy()
+            nan_spiketrain[:] = np.nan
             filtered_spiketrains.append(nan_spiketrain)
             print(f"Spike train with firing rate {firing_rate} Hz filtered out (below {min_fr} Hz).")
     return filtered_spiketrains
 
-def split_spiketrains_and_save_results(spiketrains, bin_size, window_size, window_overlap, result_folder_path, time, date):
+def split_spiketrains_and_save_results(
+    spiketrains,
+    window_size,
+    window_overlap,
+    result_folder_path,
+    time,
+    date
+):
+
+
+    if len(spiketrains) == 0:
+        return
+
+    
+
+    # --------------------------------------------------
+    # Recording duration from raw SpikeTrain
+    # --------------------------------------------------
+    recording_size = spiketrains[0].t_stop.rescale(pq.s)
+    step = window_size * (1 - window_overlap)
+    n_windows = int(np.floor((recording_size - window_size) / step)) + 1
+    window_start_list = np.arange(n_windows) * step
+    window_end_list = window_start_list + window_size
+    
+
+
+    # --------------------------------------------------
+    # Split into windows
+    # --------------------------------------------------
+    for w in range(n_windows):
+
+        full_path = define_full_file_name(
+            result_folder_path,
+            date,
+            time,
+            w
+        )
+
+        if not os.path.isfile(full_path):
+
+            print("Splitting spike trains... " + full_path)
+
+            t_start = window_start_list[w] 
+            t_stop = window_end_list[w] 
+
+            # Slice ALL electrodes
+            spiketrains_w = [
+                st.time_slice(t_start=t_start, t_stop=t_stop)
+                for st in spiketrains
+            ]
+
+            # Save sliced spike trains
+            hd.save_obj_as_pkl(spiketrains_w, full_path)
+
+        else:
+            print("Already processed: " + full_path)
+
+
+def OLDsplit_spiketrains_and_save_results(spiketrains, bin_size, window_size, window_overlap, result_folder_path, time, date):
 
     # bin spike trains
     bst = spiketrain_handler.bin_spike_trains(spiketrains, bin_size)
@@ -68,7 +123,7 @@ def split_spiketrains_and_save_results(spiketrains, bin_size, window_size, windo
             # get binned spike train for the current window
             bst_w = bst.time_slice(t_start=window_start_list[w] * pq.s, t_stop=window_end_list[w] * pq.s)
 
-            # save split spike trains as an HDF5 file
+            # save split spike trains 
             bst_w_full = spiketrain_handler.convert_BinnedSpikeTrainView_to_BinnedSpikeTrain(bst_w)
             hd.save_obj_as_pkl(bst_w_full, full_path)
 
@@ -94,7 +149,7 @@ def plot_spiketrains_and_save(bst, full_path):
     fig.clear()
 
 def define_full_file_name(result_folder, date, time, w):
-    file_name = 'window' + '{:02}'.format(w)
+    file_name = 'window' + '{:02}'.format(w) + '.pkl'
     date_time_folder = date + "_" + time
     full_path = os.path.join(result_folder, date_time_folder, file_name)
     return full_path
@@ -139,11 +194,11 @@ if __name__ == '__main__':
             # Load the spike trains
             TS, AMP, t, fs, time, date = spiketrain_handler.read_dr_cell_file(file)
             # convert dr_cell TS file to elephant spike train file
-            spiketrains_elephant = spiketrain_handler.convert_to_elephant(TS, t_stop=t)
+            spiketrains_elephant = spiketrain_handler.convert_to_elephant(TS, AMP, t_stop=t)
 
             # 1.1) apply minimum firing rate filter
             spiketrains_filtered = apply_minimum_firing_rate_filter(spiketrains_elephant, min_fr=settings.MIN_FR)
 
             # 2) split spike trains
-            split_spiketrains_and_save_results(spiketrains_filtered, bin_size, window_size, window_overlap, result_folder, time, date)
-
+            #OLDsplit_spiketrains_and_save_results(spiketrains_filtered, bin_size, window_size, window_overlap, result_folder, time, date)
+            split_spiketrains_and_save_results(spiketrains_filtered, window_size, window_overlap, result_folder, time, date)

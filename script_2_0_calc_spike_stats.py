@@ -1,79 +1,33 @@
-import matplotlib.pyplot as plt
-import itertools  # generate all parameter combinations  for parameter study
 import numpy as np
+import os
+import settings
+import itertools 
+import warnings
 from lib.data_handler import spiketrain_handler
 from lib.data_handler import hd
-import settings
-import os
 import quantities as pq
-import warnings
-from elephant.spike_train_synchrony import spike_contrast
-from elephant.functional_connectivity import total_spiking_probability_edges as tspe
-import viziphant  # visualization for elephant results
 import pandas as pd
- 
-SOURCE_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_split_data)
-TARGET_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_feature_synchrony)
+from lib.features.spikes import compute_spike_features
 
-def calculate_and_plot_and_save_synchrony(source_path, target_path, window_size):
+SOURCE_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_split_data)
+TARGET_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_feature_spikes)
+
+
+def calculate_spikes(source_path, target_path):
     # Load the spike trains
-    binned_spike_trains_elephant = hd.load_obj_from_pkl(source_path)
-    spike_trains_elephant = spiketrain_handler.binned_to_spiketrains(binned_spike_trains_elephant)
+    spike_trains_elephant = hd.load_obj_from_pkl(source_path)
 
     # Check if spike_trains_elephant is empty
     all_empty = all((not element.size) if isinstance(element, np.ndarray) else not bool(element) for element in spike_trains_elephant)
     if all_empty:
-        print(f"No spikes found in {source_path}. Skipping synchrony calculation.")
+        print(f"No spikes found in {source_path}. Skipping calculation.")
         return
-
-
-    # Calculate synchrony
-    try:
-        df_curve, fig = _calculate_synchrony(spike_trains_elephant, window_size)
-    except Exception as e:
-        print(f"Error calculating synchrony for {source_path}: {e}")
-        return
-
-    # Save the figure
-    if settings.FLAG_PLOT:
-        figure_path = target_path.replace("csv", "pdf")
-        hd.save_figure(fig, figure_path)
-    plt.close(fig)
+    
+    features = compute_spike_features(spiketrain_list = spike_trains_elephant, rec_dur_s = None, min_spike_rate = settings.MIN_FR)
+    df = pd.DataFrame([features])
 
     # Save the results 
-    hd.save_df_as_csv(df_curve, target_path)
-
-
-def _calculate_synchrony(st_list, window_size):
-
-    # init results, init figure
-    df_result = pd.DataFrame()
-    plt.figure(figsize=(8, 6))
-    fig = plt.gcf()
- 
-    # Define t_start and t_stop for synchrony calculation
-    # important to define so that synchrony is calculated for the same bins for all spike trains
-    # the same bins are needed to compare synchrony curves since they are used as features for ML
-    t_start = st_list[0].t_start.rescale(pq.s)  # start time of the first spike train
-    t_stop = t_start + window_size 
-    s, trace = spike_contrast(st_list, return_trace=True, t_start=t_start, t_stop=t_stop)  # return_trace=True: returns not only synchrony value but also curves
-    result = trace.synchrony  # save whole synchrony curve, not only max value
-    names = ["Spike-contrast (" + str(round(bin_size, 3)) + ")" for bin_size in trace.bin_size]
-    df_result = pd.DataFrame(data=[result], columns=names)
-    if not np.isnan(s):
-        fig = _plot_spike_contrast(trace, st_list)
-
-
-    return df_result, fig
-
-def _plot_spike_contrast(trace, st_list):
-    # Create a heatmap using seaborn
-    plt.figure(figsize=(8, 6))
-    viziphant.spike_train_synchrony.plot_spike_contrast(trace, spiketrains=st_list, c='gray', s=1)
-    # Get the figure handle
-    fig = plt.gcf()
-    return fig
-
+    hd.save_df_as_csv(df, target_path)
 
 if __name__ == '__main__':
 
@@ -120,6 +74,7 @@ if __name__ == '__main__':
 
                 # List all .pkl files in the folder
                 files = [f for f in os.listdir(rec_folder_path) if f.endswith('.pkl')]
+                files.sort()
 
                 # Process each .pkl file (= spike train file) and
                 # calculate snychrony
@@ -134,5 +89,5 @@ if __name__ == '__main__':
                         continue
                     else:
                         # Calculate synchrony and save results
-                        print(f"Calculating synchrony: {target_path}")
-                        calculate_and_plot_and_save_synchrony(source_path, target_path, window_size)
+                        print(f"Calculating spikes: {target_path}")
+                        calculate_spikes(source_path, target_path)

@@ -9,80 +9,122 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-from lib.machine_learning import workflow_unpaired
+from lib.machine_learning import workflow_unpaired_optatune as workflow_unpaired_optatune
 from lib.data_handler import folder_structure
 from lib.data_handler import hd
 import settings
 
 
-
-def withinloop(path_experiment, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
-    source_path = path_experiment
-
-    # check if already calculated
-    target_path = source_path.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
-    full_path = os.path.join(target_path, 'df_results.pkl')
-    if os.path.isfile(full_path):
-        print("Already calculated: " + full_path)
+def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
+    
+    # check if unsupported models are in the list
+    if 'RF' in models:
+        print("ERROR: RF is now allowed in this workflow (NaN values were not filtered out)")  # remove RF model for day by day analysis due to long computation time
         return
-    else:
-        print("Calculating: " + full_path)
+    elif 'SVM' in models or 'NB' in models or 'KNN' in models or 'LR' in models or 'MLP' in models:
+        print("ERROR: SVM, NB, KNN, LR, MLP are now allowed in this workflow (NaN values were not filtered out and features were not scaled.)")  # remove these models for day by day analysis due to long computation time
+        return
+    
+    # get paths of all experiments
+    path_experiment_list = _get_path_experiment_list()
 
-
-    if settings.FLAG_LONGTERM:
+    # for all experiments
+    for path_experiment in path_experiment_list:
 
         # define source path
-        full_path = os.path.join(path_experiment, 'feature_set_processed.csv')
+        full_path = os.path.join(path_experiment, 'feature_set_preprocessed.csv')
 
         # load the feature dataframes
         df_features = hd.load_csv_as_df(full_path, index_col=False)
 
-        # perform ml
-        df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list = workflow_unpaired.call(models, df_features)
-        workflow_unpaired.save_df_results_to_hd(target_path,
+        # get days after treatment
+        days = df_features['days_after_treatment'].unique()
+
+        # for each model:
+        for model in models:
+            print("Model: " + model)
+
+            # for each day
+            for day in days:
+
+                print("Day: " + str(day))
+
+                # check if already calculated
+                source_path = path_experiment
+                target_path = source_path.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
+                target_path = os.path.join(target_path, model, 'day_' + str(day).zfill(2))
+                full_path = os.path.join(target_path, 'df_train_results.pkl')
+                if os.path.isfile(full_path):
+                    print("Already calculated: " + full_path)
+                    continue
+                else:
+                    print("Calculating: " + full_path)
+
+                # only keep data of the specific day
+                df_features_day = df_features[df_features['days_after_treatment'] == day]
+                df_features_day = df_features_day.drop(columns=['days_after_treatment'])
+
+                df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired_optatune.call(model, df_features_day)
+                workflow_unpaired_optatune.save_df_results_to_hd(target_path,
                                         df_train_results,
                                         df_test_results,
                                         X_train_list,
                                         y_train_list,
                                         X_test_list,
-                                        y_test_list)
+                                        y_test_list,
+                                        chip_train_list,
+                                        y_pred_all,
+                                        y_true_all)
 
-        # save figs
-        fig_test_path = os.path.join(target_path, "fig_test.pdf")
-        fig_train_path = os.path.join(target_path, "fig_train.pdf")
-        fig_test = workflow_unpaired.plot_test_results(df_test_results)
-        hd.save_figure(fig_test, fig_test_path)
-        #hd.save_figure(fig_train, fig_train_path)
+            print("Calculation finished: " + full_path)
 
 
-    if settings.FLAG_ACUTE:
+def calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
+    # get paths of all experiments
+    path_experiment_list = _get_path_experiment_list()
 
-        # define source path
-        full_path = os.path.join(path_experiment, 'feature_set_processed_acute.csv')
+    # for all experiments
+    for path_experiment in path_experiment_list:
 
-        # load the feature dataframes
-        df_features = hd.load_csv_as_df(full_path, index_col=False)
+        source_path = path_experiment.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
+        # get all folder names in the source path
+        models = [f for f in os.listdir(source_path) if os.path.isdir(os.path.join(source_path, f))]
+        
+        for model in models:
+            
+            print("Model: " + model)
 
-        # perform ml
-        df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list = workflow_unpaired.call(models, df_features_acute)
-        workflow_unpaired.save_df_results_to_hd(target_path,
-                                        df_train_results,
-                                        df_test_results,
-                                        X_train_list,
-                                        y_train_list,
-                                        X_test_list,
-                                        y_test_list)
+            model_path = os.path.join(source_path, model)
+            days = [f for f in os.listdir(model_path) if os.path.isdir(os.path.join(model_path, f))]
+        
+            for day in days:
 
-        # save figs
-        fig_test_path = os.path.join(target_path, "fig_test_acute.pdf")
-        fig_train_path = os.path.join(target_path, "fig_train_acute.pdf")
-        fig_test = workflow_unpaired.plot_test_results(df_test_results)
-        hd.save_figure(fig_test, fig_test_path)
-        #hd.save_figure(fig_train, fig_train_path)
+                print("Day: " + str(day))
 
-    print("Calculation finished: " + full_path)
+                target_path = os.path.join(model_path, day)
 
+                df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired_optatune.load_df_results_from_hd(target_path)
+                
+                # optionally recalculate test results (e.g. if code changed)
+                if df_test_results is None:
+                    df_test_results = workflow_unpaired_optatune.get_test_results(model, y_true_all, y_pred_all)
+
+                # save figs
+                fig_test_path = os.path.join(target_path, "fig_test.pdf")
+                fig_train_path = os.path.join(target_path, "fig_train.pdf")
+                fig_test = workflow_unpaired_optatune.plot_test_results(df_test_results)
+                hd.save_figure(fig_test, fig_test_path, verbose=False)
+                #hd.save_figure(fig_train, fig_train_path)
+
+                # calculate ci
+                mean, lower, upper = workflow_unpaired_optatune.calculate_confidence_interval_for_auc(y_true_all, y_pred_all, n_bootstraps=2000, alpha=0.95, seed=1234)
+                df_test_results['AUC_CI_lower'] = lower
+                df_test_results['AUC_CI_upper'] = upper
+                df_test_results['AUC_CI_mean'] = mean
+                workflow_unpaired_optatune.save_df_results_to_hd(target_path, df_train_results, df_test_results, X_train_list, y_train_list, X_test_list,
+                          y_test_list, chip_train_list, y_pred_all, y_true_all, verbose=False)
+                print(f"Confidence interval for AUC: mean={mean:.3f}, lower={lower:.3f}, upper={upper:.3f}")
+                
 def _get_path_experiment_list():
     # define parameter
     bin_sizes = settings.BIN_SIZES
@@ -98,41 +140,10 @@ def _get_path_experiment_list():
 
     return path_experiment_list
 
-def run_parallized(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
-
-    # get all paths of the different parameter combinations
-    path_experiment_list = _get_path_experiment_list()
-
-    # define number of CPU cores
-    num_cores = int(multiprocessing.cpu_count()/2)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=Warning)
-        Parallel(n_jobs=num_cores)(delayed(withinloop)(param, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER) for param in path_experiment_list)
-
-def run(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
-    
-    path_experiment_list = _get_path_experiment_list()
-
-
-    for path_experiment in path_experiment_list:
-
-        source_path = path_experiment
-
-        # check if already calculated
-        target_path = source_path.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
-        full_path = os.path.join(target_path, 'df_results.pkl')
-        if os.path.isfile(full_path):
-            print("Already calculated: " + full_path)
-            continue
-        else:
-            print("Calculating: " + full_path)
-
-        withinloop(path_experiment, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
-
-
 
 if __name__ == '__main__':
+
+    print("Starting machine learning...")
 
     warnings.filterwarnings("ignore")
 
@@ -143,5 +154,5 @@ if __name__ == '__main__':
 
         # do the machine learning
         models = settings.ML_MODELS
-        run_parallized(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
-        #run(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
+        run_by_day(models,SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
+        calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)

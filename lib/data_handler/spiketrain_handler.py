@@ -37,7 +37,7 @@ def _extract_dr_cell_struct(dr_cell_struct):
     return TS, AMP, t, fs, time, date
 
 
-def convert_to_elephant(TS, t_stop=600):
+def OLDconvert_to_elephant(TS, AMP=None, t_stop=600):
     spiketrains_elephant = []
     
     if len(TS.shape) == 1:
@@ -50,7 +50,62 @@ def convert_to_elephant(TS, t_stop=600):
         # Set negative values to NaN
         spiketrain[spiketrain < 0] = np.nan
         
-        spiketrains_elephant.append(neo.SpikeTrain(spiketrain, t_stop=t_stop, units='s', sort=True))
+        neo_spiketrain = neo.SpikeTrain(spiketrain, t_stop=t_stop, units='s', sort=True)
+        
+        if AMP is not None and AMP.shape[1] > i:
+            neo_spiketrain.array_annotations["amplitude"] = AMP[:, i]  # Add waveforms if available
+        
+        spiketrains_elephant.append(neo_spiketrain)
+    return spiketrains_elephant
+
+
+def convert_to_elephant(TS, AMP=None, t_stop=600):
+    """
+    Convert timestamp matrix (and optional amplitudes) to list of Neo SpikeTrains.
+
+    Parameters
+    ----------
+    TS : array (n_spikes x n_electrodes)
+        Spike timestamps. Negative values treated as empty.
+    AMP : array (n_spikes x n_electrodes), optional
+        Per-spike amplitudes.
+    t_stop : float
+        Recording duration in seconds.
+
+    Returns
+    -------
+    list of neo.SpikeTrain
+    """
+    spiketrains_elephant = []
+
+    if TS.ndim == 1:
+        TS = TS.reshape(-1, 1)
+
+    for i in range(TS.shape[1]):
+
+        # remove invalid spikes
+        spikes = TS[:, i].copy()
+        valid = spikes >= 0  # remove negative values
+        spikes = spikes[valid]
+
+        if len(spikes) == 0:
+            spikes = np.array([])
+
+        st = neo.SpikeTrain(
+            spikes * pq.s,
+            t_start=0 * pq.s,
+            t_stop=t_stop * pq.s,
+            sort=True
+        )
+
+        # store amplitudes as per-spike annotation
+        if len(AMP.shape) == 2:
+            if AMP is not None and AMP.shape[1] > i:
+                amp = AMP[:, i][valid]
+                st.array_annotations["amplitude"] = amp
+
+        spiketrains_elephant.append(st)
+
     return spiketrains_elephant
 
 
