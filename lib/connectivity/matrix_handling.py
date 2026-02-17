@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 
-def plot_correlation_matrix(correlation_matrix, full_path):
+def plot_correlation_matrix(correlation_matrix, full_path, vmin=-1, vmax=1):
     # create directory
     result_folder = os.path.dirname(full_path)
     os.makedirs(result_folder, exist_ok=True)
@@ -15,7 +15,7 @@ def plot_correlation_matrix(correlation_matrix, full_path):
     plt.figure(figsize=(8, 6))
     sns.heatmap(correlation_matrix, annot=False, cmap='coolwarm',
                 xticklabels=range(correlation_matrix.shape[1]), yticklabels=range(correlation_matrix.shape[1]),
-                vmin=-1, vmax=1)
+                vmin=vmin, vmax=vmax)
     #plt.title(correlation_name)
     plt.title(np.nanmean(correlation_matrix))
     plt.xlabel('Channel')

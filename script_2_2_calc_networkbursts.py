@@ -35,8 +35,10 @@ def calculate_networkbursts(source_path, target_path):
 
     # Save the results 
     hd.save_df_as_csv(df_all, target_path)
-    hd.save_figure(fig100, target_path.replace(".csv", "_100.jpg"))
-    hd.save_figure(fig1000, target_path.replace(".csv", "_1000.jpg"))
+
+    if settings.FLAG_PLOT:
+        hd.save_figure(fig100, target_path.replace(".csv", "_100.jpg"))
+        hd.save_figure(fig1000, target_path.replace(".csv", "_1000.jpg"))
 
 if __name__ == '__main__':
 
@@ -74,6 +76,7 @@ if __name__ == '__main__':
 
             # List all directories in the current path
             rec_folders = [entry for entry in os.listdir(chip_folder_path) if os.path.isdir(os.path.join(chip_folder_path, entry))]
+            rec_folders.sort()
 
             # Loop through each folder (=recordings) and process the files
             for rec_folder in rec_folders:

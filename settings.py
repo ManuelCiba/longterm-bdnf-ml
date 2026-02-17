@@ -79,6 +79,9 @@ FOLDER_NAME_feature_bursts = "2_1_feature_bursts"
 FOLDER_NAME_feature_networkbursts = "2_2_feature_networkbursts"
 FOLDER_NAME_feature_synchrony_curve = "2_3_feature_synchrony_curve"
 FOLDER_NAME_feature_synchrony_stats = "2_4_feature_synchrony_stats"
+FOLDER_NAME_feature_connectivity = "2_5_feature_connectivity"
+FOLDER_NAME_feature_complex_network = "2_6_feature_complex_network"
+
 
 FOLDER_NAME_feature_set_synchrony_curve_bursts = "3_0_feature_set_synchrony_curve_bursts"
 FOLDER_NAME_feature_set_synchrony_stats_bursts = "3_0_feature_set_synchrony_stats_bursts"
