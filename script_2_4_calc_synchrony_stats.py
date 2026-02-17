@@ -13,7 +13,7 @@ import re
 from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import curve_fit
  
-SOURCE_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_feature_synchrony)
+SOURCE_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_feature_synchrony_curve)
 TARGET_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_feature_synchrony_stats)
 
 def calculate_curve_features_and_save(source_path, target_path):

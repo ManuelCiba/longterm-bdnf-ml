@@ -23,12 +23,20 @@ def calculate_networkbursts(source_path, target_path):
         print(f"No spikes found in {source_path}. Skipping calculation.")
         return
     
-    features = compute_networkburst_features(spiketrain_list = spike_trains_elephant, rec_dur_s = None)
-    df = pd.DataFrame([features])
+    features100, fig100 = compute_networkburst_features(spiketrain_list = spike_trains_elephant, isi_threshold=0.1*pq.s, min_spikes_in_burst=3)
+    df100 = pd.DataFrame([features100])
+    df100 = df100.add_prefix("nb100_")
+
+    features1000, fig1000 = compute_networkburst_features(spiketrain_list = spike_trains_elephant, isi_threshold=1.0*pq.s, min_spikes_in_burst=30)
+    df1000 = pd.DataFrame([features1000])
+    df1000 = df1000.add_prefix("nb1000_")
+
+    df_all = pd.concat([df100, df1000], axis=1)
 
     # Save the results 
-    hd.save_df_as_csv(df, target_path)
-
+    hd.save_df_as_csv(df_all, target_path)
+    hd.save_figure(fig100, target_path.replace(".csv", "_100.jpg"))
+    hd.save_figure(fig1000, target_path.replace(".csv", "_1000.jpg"))
 
 if __name__ == '__main__':
 

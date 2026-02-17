@@ -17,7 +17,7 @@ if FLAG_DATA_ISMAEL:
 
     # Ismael's data:
     # DRUG (10µM LSD) and SHAM (1% DMSO) well definitions
-    WELLS_SHAM = ['A1', 'A2', 'A3', 'A6', 'B1', 'B3', 'B4', 'B5', 'C5', 'D1', 'D2', 'D5'] # A1 excluded, because no baseline data available
+    WELLS_SHAM = ['A2', 'A3', 'A6', 'B1', 'B3', 'B4', 'B5', 'C5', 'D1', 'D2', 'D5'] # A1 excluded, because no baseline data available
     WELLS_DRUG = ['A4', 'A5', 'B2', 'B6', 'C1', 'C2', 'C3', 'C4', 'C6', 'D3', 'D4', 'D6']
     DATE_TIME_DRUG_TREATMENT_STARTED = "20231114_143512"  # At this time DRUG was present. 20231114_143512 = 14.11.2023, 14:35:12
     DATE_TIME_DRUG_TREATMENT_FINISHED = "20231115_140043"  # At this time DRUG was already washed out. 20231115_140043 = 15.11.2023, 14:00:43
@@ -77,11 +77,13 @@ FOLDER_NAME_split_data = "1_0_split_data"
 FOLDER_NAME_feature_spikes = "2_0_feature_spikes"
 FOLDER_NAME_feature_bursts = "2_1_feature_bursts"
 FOLDER_NAME_feature_networkbursts = "2_2_feature_networkbursts"
-FOLDER_NAME_feature_synchrony = "2_3_feature_synchrony"
+FOLDER_NAME_feature_synchrony_curve = "2_3_feature_synchrony_curve"
 FOLDER_NAME_feature_synchrony_stats = "2_4_feature_synchrony_stats"
 
 FOLDER_NAME_feature_set_synchrony_curve_bursts = "3_0_feature_set_synchrony_curve_bursts"
 FOLDER_NAME_feature_set_synchrony_stats_bursts = "3_0_feature_set_synchrony_stats_bursts"
+FOLDER_NAME_feature_set_all = "3_0_feature_set_all"
+
 
 FOLDER_NAME_statistics = "6_0_statistics"
 
@@ -91,8 +93,9 @@ BIN_SIZES = [1 * pq.ms] #,10 * pq.ms, 100 * pq.ms]
 WINDOW_SIZES = [240 * pq.s]#[60 * pq.s, 120 * pq.s, 240 * pq.s]  # 30 s excluded, took too long.  600 * pq.s excluded, not enough data points for 10 fold cross validation
 WINDOW_OVERLAPS = [0.75] # 0.5 = 50% overlap
 FEATURE_SET_LIST = [
-                    FOLDER_NAME_feature_set_synchrony_curve_bursts,
-                    FOLDER_NAME_feature_set_synchrony_stats_bursts,
+                    #FOLDER_NAME_feature_set_synchrony_curve_bursts,
+                    #FOLDER_NAME_feature_set_synchrony_stats_bursts,
+                    FOLDER_NAME_feature_set_all
     ]
 
 #ML_MODELS = ['XGboost', 'LightGBM', 'CatBoost']

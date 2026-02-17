@@ -13,7 +13,7 @@ import viziphant  # visualization for elephant results
 import pandas as pd
  
 SOURCE_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_split_data)
-TARGET_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_feature_synchrony)
+TARGET_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_feature_synchrony_curve)
 
 def calculate_and_plot_and_save_synchrony(source_path, target_path, window_size):
     # Load the spike trains

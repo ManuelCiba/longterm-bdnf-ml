@@ -20,8 +20,6 @@ def get_feature_set_df(source_path):
     # Loop through each folder (=Chip, e.g. A1) and process the files
     for chip_folder in chip_folders:
 
-        print(f"Processing chip folder: {chip_folder}")
-
         # Define the full path to the folder
         chip_folder_path = os.path.join(current_path, chip_folder)
 
@@ -45,7 +43,7 @@ def get_feature_set_df(source_path):
         # Loop through each recording folder
         for rec_folder in rec_folders:
 
-            print(f"Processing recording folder: {rec_folder}") 
+            print("Processing: chip: " + chip_folder + " recording folder: " + rec_folder) 
 
             # Define the full path to the recording folder
             rec_folder_path = os.path.join(chip_folder_path, rec_folder)
@@ -155,7 +153,7 @@ if __name__ == '__main__':
 
         if settings.FOLDER_NAME_feature_set_synchrony_curve_bursts in settings.FEATURE_SET_LIST:
             ############################################################
-            # FEATURE-SET 0: synchrony curve and bursts 
+            # FEATURE-SET 0: synchrony curve 
             SOURCE_DATA_FOLDER = settings.FOLDER_NAME_feature_synchrony
             TARGET_DATA_FOLDER = settings.FOLDER_NAME_feature_set_synchrony_curve_bursts
             source_path = path_experiment.replace("TARGET_DATA_FOLDER", SOURCE_DATA_FOLDER)
@@ -188,6 +186,44 @@ if __name__ == '__main__':
             df_bursts = get_feature_set_df(source_path)
             # merge two dataframes
             df_feature_set = _merge_two_dataframes_together(df_synchrony_curve, df_bursts)
+            # save the DataFrame
+            full_target_path = os.path.join(target_path, 'feature_set_raw.csv')
+            hd.save_df_as_csv(df_feature_set, full_target_path)
+            print(f"Saved feature set to {full_target_path}")
+
+        if settings.FOLDER_NAME_feature_set_all in settings.FEATURE_SET_LIST:
+            ############################################################
+            # FEATURE-SET: all 
+            
+            TARGET_DATA_FOLDER = settings.FOLDER_NAME_feature_set_all
+            target_path = path_experiment.replace("TARGET_DATA_FOLDER", TARGET_DATA_FOLDER)
+            
+            # Spikes
+            SOURCE_DATA_FOLDER = settings.FOLDER_NAME_feature_spikes
+            source_path = path_experiment.replace("TARGET_DATA_FOLDER", SOURCE_DATA_FOLDER)
+            df_spikes = get_feature_set_df(source_path)
+            # Bursts
+            SOURCE_DATA_FOLDER = settings.FOLDER_NAME_feature_bursts
+            source_path = path_experiment.replace("TARGET_DATA_FOLDER", SOURCE_DATA_FOLDER)
+            df_bursts = get_feature_set_df(source_path)
+            # Networkbursts
+            SOURCE_DATA_FOLDER = settings.FOLDER_NAME_feature_networkbursts
+            source_path = path_experiment.replace("TARGET_DATA_FOLDER", SOURCE_DATA_FOLDER)
+            df_networkbursts = get_feature_set_df(source_path)
+            # Synchrony curve
+            SOURCE_DATA_FOLDER = settings.FOLDER_NAME_feature_synchrony_curve
+            source_path = path_experiment.replace("TARGET_DATA_FOLDER", SOURCE_DATA_FOLDER)
+            df_synchrony_curve = get_feature_set_df(source_path)
+            # Synchrony stats
+            SOURCE_DATA_FOLDER = settings.FOLDER_NAME_feature_synchrony_stats
+            source_path = path_experiment.replace("TARGET_DATA_FOLDER", SOURCE_DATA_FOLDER)
+            df_synchrony_stats = get_feature_set_df(source_path)
+            
+            # merge two dataframes
+            df_feature_set = _merge_two_dataframes_together(df_spikes, df_bursts)
+            df_feature_set = _merge_two_dataframes_together(df_feature_set, df_networkbursts)
+            df_feature_set = _merge_two_dataframes_together(df_feature_set, df_synchrony_curve)
+            df_feature_set = _merge_two_dataframes_together(df_feature_set, df_synchrony_stats)
             # save the DataFrame
             full_target_path = os.path.join(target_path, 'feature_set_raw.csv')
             hd.save_df_as_csv(df_feature_set, full_target_path)
