@@ -104,27 +104,27 @@ def compute_spike_features(spiketrain_list, rec_dur_s=None, min_spike_rate=0.1):
     
 
     # Spike rate
-    chip_features["spike_rate_med"], chip_features["spike_rate_iqr"], chip_features["spike_rate_cvrobust"] = \
+    chip_features["spike_rate_med"], chip_features["spike_rate_iqr"], chip_features["spike_rate_rcv"] = \
         robust_stats(spike_rates)
     
     # Amp median
-    chip_features["amplitude_med"], chip_features["amplitude_med_iqr"], chip_features["amplitude_med_cvrobust"] = \
+    chip_features["amplitude_med"], chip_features["amplitude_med_iqr"], chip_features["amplitude_med_rcv"] = \
         robust_stats(amp_meds)
 
     # Amp IQR
-    chip_features["amplitude_iqr_med"], chip_features["amplitude_iqr_iqr"], chip_features["amplitude_iqr_cvrobust"] = \
+    chip_features["amplitude_iqr_med"], chip_features["amplitude_iqr_iqr"], chip_features["amplitude_iqr_rcv"] = \
         robust_stats(amp_iqrs)
 
     # Fano factor
-    chip_features["fano_med"], chip_features["fano_iqr"], chip_features["fano_cvrobust"] = \
+    chip_features["fano_med"], chip_features["fano_iqr"], chip_features["fano_rcv"] = \
         robust_stats(fano_factors)
     
     # ISI median
-    chip_features["isi_med_med"], chip_features["isi_med_iqr"], chip_features["isi_med_cvrobust"] = \
+    chip_features["isi_med_med"], chip_features["isi_med_iqr"], chip_features["isi_med_rcv"] = \
         robust_stats(isi_meds)
     
     # ISI IQR
-    chip_features["isi_iqr_med"], chip_features["isi_iqr_iqr"], chip_features["isi_iqr_cvrobust"] = \
+    chip_features["isi_iqr_med"], chip_features["isi_iqr_iqr"], chip_features["isi_iqr_rcv"] = \
         robust_stats(isi_iqrs)
     
     return chip_features

@@ -35,7 +35,7 @@ from lightgbm import LGBMClassifier # sklearn compatible version
 # CatBoost
 from catboost import CatBoostClassifier # sklearn compatible version
 
-DEBUG = True
+DEBUG = False
 
 MAX_TRIAL_SECONDS = 20  # maximum seconds allowed per trial
 
@@ -416,15 +416,17 @@ def _evaluate(model_name, X_train, y_train, groups_train):
         # narrower space for small samples
         def param_space(trial):
             return {
-                "iterations": trial.suggest_int("iterations", 50, 300),
-                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.1, log=True),
-                "depth": trial.suggest_int("depth", 3, 5),
-                "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1, 10, log=True),
+                "iterations": trial.suggest_int("iterations", 100, 400),
+                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.07, log=True),
+                "depth": trial.suggest_int("depth", 3, 4),  # narrower
+                "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 3, 30, log=True),  # stronger
                 "border_count": trial.suggest_int("border_count", 32, 64),
-                "bagging_temperature": trial.suggest_float("bagging_temperature", 0.0, 0.5),
-                "random_strength": trial.suggest_float("random_strength", 0.0, 2.0),
+                "bagging_temperature": trial.suggest_float("bagging_temperature", 0.0, 0.3),
+                "random_strength": trial.suggest_float("random_strength", 0.5, 3.0),  # increased lower bound
+                "rsm": trial.suggest_float("rsm", 0.5, 0.9),  # Random subspace method
                 "loss_function": "Logloss",
                 "eval_metric": "AUC",
+                "bootstrap_type": "Bayesian",
                 "verbose": 0,
                 "thread_count": 1
             }

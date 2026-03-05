@@ -43,7 +43,7 @@ if __name__ == '__main__':
             # Load the spike trains
             TS, AMP, t, fs, time, date = spiketrain_handler.read_dr_cell_file(file_path)
             # convert dr_cell TS file to elephant spike train file
-            spike_trains_elephant = spiketrain_handler.convert_to_elephant(TS, t_stop=t)
+            spike_trains_elephant = spiketrain_handler.convert_to_elephant(TS, AMP, t_stop=t)
 
             fig = plot_spiketrains(spike_trains_elephant)
 

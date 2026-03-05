@@ -4,7 +4,7 @@ from lib.features.helper import robust_stats
 import matplotlib.pyplot as plt
 
 
-def compute_burst_features(spiketrain_list, rec_dur_s=None, isi_threshold=0.1*pq.s, min_spikes_in_burst=3, min_burst_rate=0):
+def compute_burst_features(spiketrain_list, rec_dur_s=None, isi_threshold=0.1*pq.s, min_spikes_in_burst=3, min_burst_rate=0,flag_plot=False):
     
     if len(spiketrain_list) == 0:
         return {}
@@ -24,7 +24,9 @@ def compute_burst_features(spiketrain_list, rec_dur_s=None, isi_threshold=0.1*pq
         rec_dur_s,
         min_burst_rate=min_burst_rate)
 
-    fig = plot_spiketrains_with_bursts(spiketrain_list, bursts)
+    fig = None
+    if flag_plot:
+        fig = plot_spiketrains_with_bursts(spiketrain_list, bursts)
 
     return features, fig
 

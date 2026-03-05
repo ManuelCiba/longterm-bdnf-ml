@@ -83,12 +83,12 @@ def get_feature_set_df(source_path):
     df_feature_set = _merge_list_of_df_to_one_df(df_list)
 
     # round "days_after_treatment" (important especially if group1 and group2 were not recorded at same time but sequentially - in this case ML will learn the days!) 
-    df_feature_set["days_after_treatment"] = df_feature_set["days_after_treatment"].apply(bin_time)
+    #df_feature_set["days_after_treatment"] = df_feature_set["days_after_treatment"].apply(bin_time)
     
     # remove excluded days
-    if settings.DATE_TIME_LAST_RECORDING != "":
-        print(f"Removing recordings after {settings.DATE_TIME_LAST_RECORDING} ...")
-        df_feature_set = _remove_excluded_days(df_feature_set)
+    #if settings.DATE_TIME_LAST_RECORDING != "":
+    #    print(f"Removing recordings after {settings.DATE_TIME_LAST_RECORDING} ...")
+    #    df_feature_set = _remove_excluded_days(df_feature_set)
 
     return df_feature_set
 
@@ -218,12 +218,18 @@ if __name__ == '__main__':
             SOURCE_DATA_FOLDER = settings.FOLDER_NAME_feature_synchrony_stats
             source_path = path_experiment.replace("TARGET_DATA_FOLDER", SOURCE_DATA_FOLDER)
             df_synchrony_stats = get_feature_set_df(source_path)
+            # Complex network measure stats
+            SOURCE_DATA_FOLDER = settings.FOLDER_NAME_feature_complex_network
+            source_path = path_experiment.replace("TARGET_DATA_FOLDER", SOURCE_DATA_FOLDER)
+            df_complex_network = get_feature_set_df(source_path)
             
             # merge two dataframes
             df_feature_set = _merge_two_dataframes_together(df_spikes, df_bursts)
             df_feature_set = _merge_two_dataframes_together(df_feature_set, df_networkbursts)
             df_feature_set = _merge_two_dataframes_together(df_feature_set, df_synchrony_curve)
             df_feature_set = _merge_two_dataframes_together(df_feature_set, df_synchrony_stats)
+            df_feature_set = _merge_two_dataframes_together(df_feature_set, df_complex_network)
+            
             # save the DataFrame
             full_target_path = os.path.join(target_path, 'feature_set_raw.csv')
             hd.save_df_as_csv(df_feature_set, full_target_path)

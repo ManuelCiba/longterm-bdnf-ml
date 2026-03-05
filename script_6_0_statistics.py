@@ -39,7 +39,10 @@ def preprocess_and_plot(df, target_path):
                 drug_vals = df_mean[(df_mean["days_after_treatment"] == day) & (df_mean["group"] == "DRUG")][feature]
                 sham_vals = df_mean[(df_mean["days_after_treatment"] == day) & (df_mean["group"] == "SHAM")][feature]
                 
-                # Perform t-test
+                drug_vals = drug_vals.dropna()
+                sham_vals = sham_vals.dropna()
+
+                # Perform test
                 if len(drug_vals) > 1 and len(sham_vals) > 1:
                     _, p_val = mannwhitneyu(sham_vals, drug_vals, alternative="two-sided")
                     all_results.append({
@@ -289,6 +292,10 @@ def lmm_daywise_group_pvalues(df_mean, feature, subject_col="chip"):
     return pd.DataFrame(rows)
 
 def p_to_stars(p):
+    if p <= 0.00001:
+        return "*****"
+    if p <= 0.0001:
+        return "****"
     if p <= 0.001:
         return "***"
     elif p <= 0.01:
@@ -377,14 +384,12 @@ if __name__ == '__main__':
             source_path = path_experiment.replace("PATH", feature_set)
             target_path = path_experiment.replace("PATH", os.path.join(settings.FOLDER_NAME_statistics, feature_set))   
             # load the feature set DataFrame
-            full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
+            #full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
+            full_source_path = os.path.join(source_path, 'feature_set_preprocessed.csv')
             df = hd.load_csv_as_df(full_source_path)
 
-            #full_source_path2 = os.path.join(source_path, 'feature_set_processed.csv')
-            #df2 = hd.load_csv_as_df(full_source_path)
-
             # Drop rows where days_after_treatment < 0
-            df = df.loc[df["days_after_treatment"] >= 0].reset_index(drop=True)
+            #df = df.loc[df["days_after_treatment"] >= 0].reset_index(drop=True)
 
             preprocess_and_plot(df, target_path)
 

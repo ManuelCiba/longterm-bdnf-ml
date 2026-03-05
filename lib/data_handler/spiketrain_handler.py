@@ -99,10 +99,13 @@ def convert_to_elephant(TS, AMP=None, t_stop=600):
         )
 
         # store amplitudes as per-spike annotation
-        if len(AMP.shape) == 2:
-            if AMP is not None and AMP.shape[1] > i:
-                amp = AMP[:, i][valid]
-                st.array_annotations["amplitude"] = amp
+        if AMP is not None:
+            if len(AMP.shape) == 2:
+                if AMP.shape[1] > i:
+                    amp = AMP[:, i][valid]
+                    st.array_annotations["amplitude"] = amp
+        else:
+            st.array_annotations["amplitude"] = np.array([])
 
         spiketrains_elephant.append(st)
 

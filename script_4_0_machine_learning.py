@@ -37,6 +37,9 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
         # load the feature dataframes
         df_features = hd.load_csv_as_df(full_path, index_col=False)
 
+        # drop columns that are not needed for the machine learning
+        df_features = df_features.drop(columns=['group', 'recording', 'file']) 
+
         # get days after treatment
         days = df_features['days_after_treatment'].unique()
 
@@ -64,7 +67,11 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
                 df_features_day = df_features[df_features['days_after_treatment'] == day]
                 df_features_day = df_features_day.drop(columns=['days_after_treatment'])
 
-                df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired_optatune.call(model, df_features_day)
+                try:
+                    df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired_optatune.call(model, df_features_day)
+                except Exception as e:
+                    print("Error in ML workflow for day " + str(day) + ": " + str(e))
+                    continue
                 workflow_unpaired_optatune.save_df_results_to_hd(target_path,
                                         df_train_results,
                                         df_test_results,

@@ -23,11 +23,11 @@ def calculate_bursts(source_path, target_path):
         print(f"No spikes found in {source_path}. Skipping calculation.")
         return
     
-    features100, fig100 = compute_burst_features(spiketrain_list = spike_trains_elephant, rec_dur_s = None, isi_threshold=0.1*pq.s, min_spikes_in_burst=3, min_burst_rate=0.05)
+    features100, fig100 = compute_burst_features(spiketrain_list = spike_trains_elephant, rec_dur_s = None, isi_threshold=0.1*pq.s, min_spikes_in_burst=3, min_burst_rate=0.05, flag_plot=settings.FLAG_PLOT)
     df100 = pd.DataFrame([features100])
     df100 = df100.add_prefix("b100_")
 
-    features1000, fig1000 = compute_burst_features(spiketrain_list = spike_trains_elephant, rec_dur_s = None, isi_threshold=1*pq.s, min_spikes_in_burst=3, min_burst_rate=0.005)
+    features1000, fig1000 = compute_burst_features(spiketrain_list = spike_trains_elephant, rec_dur_s = None, isi_threshold=1*pq.s, min_spikes_in_burst=3, min_burst_rate=0.005, flag_plot=settings.FLAG_PLOT)
     df1000 = pd.DataFrame([features1000])
     df1000 = df1000.add_prefix("b1000_")
 

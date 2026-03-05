@@ -22,6 +22,17 @@ def preprocess_df_features(df_features):
     # Ensure the 'recording' column is in datetime format
     df_features['recording'] = pd.to_datetime(df_features['recording'], format="%Y%m%d_%H%M%S")
 
+    # (re)calculate the days after treatment for each recording (relative to the DRUG treatment finish date)
+    #df_features["days_after_treatment"] = (
+    #    df_features["recording"].dt.normalize()
+    #    - DATE_TIME_DRUG_TREATMENT_FINISHED.normalize()).dt.days
+
+    df_features["hours_after_washout"] = (
+        df_features["recording"] - DATE_TIME_DRUG_TREATMENT_FINISHED).dt.total_seconds() / 3600
+
+    df_features["days_after_treatment"] = np.floor(df_features["hours_after_washout"] / 24).astype(int)
+    df_features = df_features.drop(columns=['hours_after_washout'])  # drop the intermediate column
+
     # If the baseline correction is needed, set to True
     if False:
         # drop the daytime column and insert later again after the calculation
@@ -43,12 +54,18 @@ def preprocess_df_features(df_features):
         df_features = pd.concat([days_after_treatment, df_features], axis=1)
 
     # drop the baseline rows to only keep post-treatment data
-    df_features = df_features[df_features['recording'] >= DATE_TIME_DRUG_TREATMENT_FINISHED]
+    #df_features = df_features[df_features['recording'] >= DATE_TIME_DRUG_TREATMENT_FINISHED]
 
-    # drop columns that are not needed for the machine learning
-    df_features = df_features.drop(columns=['group', 'recording', 'file']) 
+    # get n per day
+    n_per_day = (df_features.groupby("days_after_treatment").size().reset_index(name="n_recordings"))
 
-    return df_features
+    # remove excluded days
+    if settings.DATE_TIME_LAST_RECORDING != "":
+        print(f"Removing recordings after {settings.DATE_TIME_LAST_RECORDING} ...")
+        df_features = _remove_excluded_days(df_features)
+
+    
+    return df_features, n_per_day
 
 # currently not used, but can be used to only use acute data for machine learning
 def preprocess_df_features_acute(df_features):
@@ -94,6 +111,18 @@ def preprocess_df_features_acute(df_features):
 
     return df_features
 
+def _remove_excluded_days(df):
+    # Convert 'recording' column to datetime
+    rec = pd.to_datetime(df['recording'], format="%Y%m%d_%H%M%S")
+
+    # Convert the last recording date from settings to datetime
+    DATE_TIME_LAST_RECORDING = pd.to_datetime(settings.DATE_TIME_LAST_RECORDING, format="%Y%m%d_%H%M%S")
+
+    # Filter the DataFrame to include only rows before or on the last recording date
+    df_filtered = df[rec <= DATE_TIME_LAST_RECORDING]
+
+    return df_filtered
+
 
 if __name__ == '__main__':
 
@@ -121,7 +150,10 @@ if __name__ == '__main__':
             full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
             df_feature_set = hd.load_csv_as_df(full_source_path)
             # preprocess 
-            df_feature_preprocessed = preprocess_df_features(df_feature_set)
+            df_feature_preprocessed, n_per_day = preprocess_df_features(df_feature_set)
             # save the preprocessed feature set
             full_target_path = os.path.join(target_path, 'feature_set_preprocessed.csv')
             hd.save_df_as_csv(df_feature_preprocessed, full_target_path)
+            # save the number of samples per day
+            full_n_per_day_path = os.path.join(target_path, 'n_per_day.csv')
+            hd.save_df_as_csv(n_per_day,full_n_per_day_path)

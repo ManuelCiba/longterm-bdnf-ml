@@ -4,7 +4,7 @@ from lib.features.helper import robust_stats
 import quantities as pq
 import matplotlib.pyplot as plt
 
-def compute_networkburst_features(spiketrain_list, isi_threshold=0.1*pq.s, min_spikes_in_burst=3):
+def compute_networkburst_features(spiketrain_list, isi_threshold=0.1*pq.s, min_spikes_in_burst=3, flag_plot=False):
 
     if len(spiketrain_list) == 0:
         return {}
@@ -15,7 +15,9 @@ def compute_networkburst_features(spiketrain_list, isi_threshold=0.1*pq.s, min_s
 
     network_bursts = detect_network_bursts(bursts_per_channel)
 
-    fig = plot_spiketrains_with_network_bursts(spiketrain_list, network_bursts)
+    fig = None
+    if flag_plot:
+        fig = plot_spiketrains_with_network_bursts(spiketrain_list, network_bursts)
 
     features = network_burst_features(network_bursts, spiketrain_list, rec_dur_s)
     

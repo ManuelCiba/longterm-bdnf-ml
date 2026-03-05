@@ -1,6 +1,5 @@
 import os
 import quantities as pq
-import matplotlib
 from matplotlib.colors import ListedColormap
 import matplotlib.ticker as mticker
 from matplotlib.colors import LinearSegmentedColormap
@@ -22,6 +21,8 @@ import numpy as np
 import matplotlib.cm as cm
 from scipy.cluster.hierarchy import linkage, fcluster
 import re
+import textwrap
+import math
 
 
 
@@ -624,6 +625,76 @@ def _get_path_experiment_list():
 
     return path_experiment_list
 
+
+def plot_feature_groups(feature_groups,
+                        n_columns=3,
+                        figsize=(18, 12),
+                        title="Feature Groups",
+                        save_path=None):
+    """
+    Publication-style multi-column feature group visualization.
+
+    Parameters
+    ----------
+    feature_groups : dict
+        {group_name: [feature1, feature2, ...]}
+    n_columns : int
+        Number of columns.
+    figsize : tuple
+        Figure size.
+    title : str
+        Figure title.
+    save_path : str or None
+        If provided, saves figure to this path.
+    """
+
+    # Convert dict to list for column splitting
+    groups = list(feature_groups.items())
+    n_groups = len(groups)
+    groups_per_col = math.ceil(n_groups / n_columns)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.axis("off")
+
+    col_width = 1 / n_columns
+    y_start = 0.98
+
+    for col in range(n_columns):
+        x = col * col_width + 0.02
+        y = y_start
+
+        start_idx = col * groups_per_col
+        end_idx = min((col + 1) * groups_per_col, n_groups)
+
+        for group_name, features in groups[start_idx:end_idx]:
+
+            # Plot group name
+            ax.text(x, y, group_name,
+                    fontsize=14,
+                    fontweight="bold",
+                    transform=ax.transAxes,
+                    verticalalignment="top")
+            y -= 0.035
+
+            # Plot wrapped features
+            for feature in features:
+                wrapped = textwrap.fill(feature.replace("_", " "), width=30)
+                ax.text(x + 0.015, y, wrapped,
+                        fontsize=9,
+                        transform=ax.transAxes,
+                        verticalalignment="top")
+                y -= 0.025
+
+            y -= 0.02  # spacing between groups
+
+    fig.suptitle(title, fontsize=18, y=0.995)
+    plt.tight_layout()
+
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+
+    plt.show()
+
 if __name__ == '__main__':
     # for all machine learning folder:
     for FOLDER in settings.FEATURE_SET_LIST:
@@ -643,11 +714,25 @@ if __name__ == '__main__':
             feature_path = path_experiment.replace(SOURCE_DATA_FOLDER, FOLDER)
             # define source path
             full_path = os.path.join(feature_path, 'feature_set_preprocessed.csv')
+            
+            
             # load the feature dataframes
             df_features = hd.load_csv_as_df(full_path, index_col=False)
+
+            # drop columns that are not needed for the machine learning
+            df_features = df_features.drop(columns=['group', 'recording', 'file']) 
+
+
             feature_groups, corr = calculate_correlation_and_feature_groups(df_features)
             corr_path = os.path.join(path_experiment.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER), "feature_correlation_matrix.jpg")
             plot_feature_correlation(corr, save_path=corr_path)
+            feature_groups_path = os.path.join(path_experiment.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER), "feature_groups.pdf")
+            plot_feature_groups(feature_groups, save_path=feature_groups_path)
+
+            # save feature groups
+            df_feature_groups = pd.DataFrame([feature_groups])
+            feature_groups_path = os.path.join(path_experiment.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER), "feature_groups.csv")
+            hd.save_df_as_csv(df_feature_groups, feature_groups_path)
 
             # get all folder names in the source path
             source_path = path_experiment
