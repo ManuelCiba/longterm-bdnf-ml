@@ -48,7 +48,7 @@ def compute_spike_features(spiketrain_list, rec_dur_s=None, min_spike_rate=0.1):
     amp_iqrs = []
     
     # this fano factor is not used, it just shows how different the spike trains are between electrdoes 
-    # the fano factor below is calculated at the electrdoe level, showing the variability of spike counts across time bins for each electrode, and then aggregated across electrodes using robust statistics.
+    # the fano factor below is calculated at the electrode level, showing the variability of spike counts across time bins for each electrode, and then aggregated across electrodes using robust statistics.
     fano2 = fanofactor(spiketrain_list)
 
     for st in spiketrain_list:
@@ -58,7 +58,7 @@ def compute_spike_features(spiketrain_list, rec_dur_s=None, min_spike_rate=0.1):
         active_flags.append(is_active)
         
         if not is_active:
-            spike_rates.append(np.nan)
+            spike_rates.append(np.nan) 
             fano_factors.append(np.nan)
             isi_meds.append(np.nan)
             isi_iqrs.append(np.nan)
@@ -106,6 +106,9 @@ def compute_spike_features(spiketrain_list, rec_dur_s=None, min_spike_rate=0.1):
     # Spike rate
     chip_features["spike_rate_med"], chip_features["spike_rate_iqr"], chip_features["spike_rate_rcv"] = \
         robust_stats(spike_rates)
+    # set nan spike rates to 0, so they get recognized as dead chips in statistics
+    if np.isnan(chip_features["spike_rate_med"]):
+        chip_features["spike_rate_med"] = 0.0
     
     # Amp median
     chip_features["amplitude_med"], chip_features["amplitude_med_iqr"], chip_features["amplitude_med_rcv"] = \

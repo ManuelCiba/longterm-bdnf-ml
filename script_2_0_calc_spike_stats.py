@@ -18,12 +18,13 @@ def calculate_spikes(source_path, target_path):
     spike_trains_elephant = hd.load_obj_from_pkl(source_path)
 
     # Check if spike_trains_elephant is empty
-    all_empty = all((not element.size) if isinstance(element, np.ndarray) else not bool(element) for element in spike_trains_elephant)
-    if all_empty:
-        print(f"No spikes found in {source_path}. Skipping calculation.")
-        return
+    #all_empty = all((not element.size) if isinstance(element, np.ndarray) else not bool(element) for element in spike_trains_elephant)
+    #if all_empty:
+    #    print(f"No spikes found in {source_path}. Skipping calculation.")
+    #     return
     
-    features = compute_spike_features(spiketrain_list = spike_trains_elephant, rec_dur_s = None, min_spike_rate = settings.MIN_FR)
+    min_spike_rate = 0.0000001 # set to (almost) 0 to include all electrodes (if set to exact 0, all electrodes will be counted as active). Electrodes were already filtered out in the split_data script.
+    features = compute_spike_features(spiketrain_list = spike_trains_elephant, rec_dur_s = None, min_spike_rate = min_spike_rate)
     df = pd.DataFrame([features])
 
     # Save the results 

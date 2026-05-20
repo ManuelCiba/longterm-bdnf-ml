@@ -18,10 +18,10 @@ def calculate_networkbursts(source_path, target_path):
     spike_trains_elephant = hd.load_obj_from_pkl(source_path)
 
     # Check if spike_trains_elephant is empty
-    all_empty = all((not element.size) if isinstance(element, np.ndarray) else not bool(element) for element in spike_trains_elephant)
-    if all_empty:
-        print(f"No spikes found in {source_path}. Skipping calculation.")
-        return
+    #all_empty = all((not element.size) if isinstance(element, np.ndarray) else not bool(element) for element in spike_trains_elephant)
+    #if all_empty:
+    #    print(f"No spikes found in {source_path}. Skipping calculation.")
+    #    return
     
     features100, fig100 = compute_networkburst_features(spiketrain_list = spike_trains_elephant, isi_threshold=0.1*pq.s, min_spikes_in_burst=3, flag_plot=settings.FLAG_PLOT)
     df100 = pd.DataFrame([features100])

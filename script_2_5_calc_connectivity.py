@@ -102,8 +102,8 @@ if __name__ == '__main__':
                 # calculate snychrony
                 for file in files:
                     source_path = os.path.join(rec_folder_path, file)
-                    target_path = os.path.join(result_path, file)
-                    target_path = target_path.replace(".pkl", "_CM.csv")
+                    target_path = os.path.join(result_path, "CM", file)
+                    target_path = target_path.replace(".pkl", ".csv")
 
                     # Test if target file already exists
                     if os.path.exists(target_path):

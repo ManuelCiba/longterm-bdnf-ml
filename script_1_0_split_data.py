@@ -99,40 +99,6 @@ def split_spiketrains_and_save_results(
             print("Already processed: " + full_path)
 
 
-def OLDsplit_spiketrains_and_save_results(spiketrains, bin_size, window_size, window_overlap, result_folder_path, time, date):
-
-    # bin spike trains
-    bst = spiketrain_handler.bin_spike_trains(spiketrains, bin_size)
-
-    # split binned spike trains into windows
-    recording_size = bst.t_stop
-    step = window_size * (1 - window_overlap)
-    window_start_list = list(range(0, int(recording_size), int(step)))
-    window_end_list = list(range(int(window_size), int(recording_size) + int(step), int(step)))
-
-    num_windows = min([len(window_start_list), len(window_end_list)])
-    for w in range(num_windows):
-
-        # define file name
-        full_path = define_full_file_name(result_folder_path, date, time, w)
-
-        # only calculate if result does not exist yet
-        if not os.path.isfile(full_path):
-            print("Splitting spike trains... " + full_path)
-
-            # get binned spike train for the current window
-            bst_w = bst.time_slice(t_start=window_start_list[w] * pq.s, t_stop=window_end_list[w] * pq.s)
-
-            # save split spike trains 
-            bst_w_full = spiketrain_handler.convert_BinnedSpikeTrainView_to_BinnedSpikeTrain(bst_w)
-            hd.save_obj_as_pkl(bst_w_full, full_path)
-
-            # plot spike trains and save
-            if False:
-                plot_spiketrains_and_save(bst_w, full_path)
-        else:
-            print("Already processed: " + full_path)
-
 def plot_spiketrains_and_save(bst, full_path):
 
     fig, ax = plt.subplots()  # Create a figure and axis object
@@ -200,5 +166,4 @@ if __name__ == '__main__':
             spiketrains_filtered = apply_minimum_firing_rate_filter(spiketrains_elephant, min_fr=settings.MIN_FR)
 
             # 2) split spike trains
-            #OLDsplit_spiketrains_and_save_results(spiketrains_filtered, bin_size, window_size, window_overlap, result_folder, time, date)
             split_spiketrains_and_save_results(spiketrains_filtered, window_size, window_overlap, result_folder, time, date)

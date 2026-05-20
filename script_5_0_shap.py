@@ -139,12 +139,15 @@ def _generate_group_names(feature_groups):
 
 def calculate_correlation_and_feature_groups(df_features):
     
+    # remove columns with zero variance
+    df_features = df_features.loc[:, df_features.nunique() > 1]
 
     # drop non-feature columns and calculate correlation matrix
     corr = df_features.drop(columns=['y', 'chip', 'days_after_treatment']).corr(method='spearman')
 
     # cluster features based on correlation
     distance = 1 - np.abs(corr)
+    
     Z = linkage(distance, method='average')
     clusters = fcluster(Z, t=0.3, criterion='distance')  # t=0.3 -> >0.7 correlation belongs together
 
@@ -759,7 +762,10 @@ if __name__ == '__main__':
 
                     # calculate shap values
                     #OLDcalculate_shap_values(target_path, model, X_train_list, df_train_results)
-                    calculate_shap_values(target_path, model, X_train_list, chip_train_list, df_train_results)
+                    try:
+                        calculate_shap_values(target_path, model, X_train_list, chip_train_list, df_train_results)
+                    except Exception as e:
+                        print(e)
 
                     # plot all shap value dependence
                     #try:

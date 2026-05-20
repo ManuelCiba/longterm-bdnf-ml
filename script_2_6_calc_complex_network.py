@@ -1,3 +1,5 @@
+from importlib.resources import files
+
 import elephant
 import matplotlib.pyplot as plt
 import itertools  # generate all parameter combinations  for parameter study
@@ -251,11 +253,12 @@ if __name__ == '__main__':
             # Loop through each folder (=recordings) and process the files
             for rec_folder in rec_folders:
                 # Define the full path to the folder
-                rec_folder_path = os.path.join(chip_folder_path, rec_folder)
+                rec_folder_path = os.path.join(chip_folder_path, rec_folder, "CM")
                 result_path = rec_folder_path.replace(SOURCE_PATH, TARGET_PATH)
 
                 # List all .pkl files in the folder
-                files = [f for f in os.listdir(rec_folder_path) if f.endswith('_CM.csv')]
+                #files = [f for f in os.listdir(rec_folder_path) if f.endswith('_CM.csv')]
+                files = [f for f in os.listdir(rec_folder_path)]
                 files.sort()
 
                 # Process each .pkl file (= spike train file)
@@ -263,6 +266,7 @@ if __name__ == '__main__':
                     source_path = os.path.join(rec_folder_path, file)
                     target_path = os.path.join(result_path, file)
                     target_path = target_path.replace(".pkl", ".csv")
+                    target_path = target_path.replace("CM/", "")
 
                     # Test if target file already exists
                     if os.path.exists(target_path):

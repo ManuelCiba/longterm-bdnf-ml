@@ -102,6 +102,10 @@ def calc_features(
     features["rate_med"], features["rate_iqr"], features["rate_rcv"] = \
         robust_stats(burst_rates)
 
+    # set nan rates to 0, so they get recognized as dead chips in statistics
+    if np.isnan(features["rate_med"]):
+        features["rate_med"] = 0.0
+
     features["dur_med"], features["dur_iqr"], features["dur_rcv"] = \
         robust_stats(burst_durations)
 

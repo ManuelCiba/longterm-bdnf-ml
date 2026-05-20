@@ -113,9 +113,25 @@ def _merge_two_lists_together(list_a, list_b):
     return list_final
 
 def _merge_two_dataframes_together(df1, df2):
-    df = pd.concat([df1, df2], axis=1)
+
+    df = pd.merge(
+        df1,
+        df2,
+        on=["chip", "recording", "file"],
+        how="outer",
+        suffixes=("", "_dup")
+    )
+
+    df = df.drop(columns=[c for c in df.columns if c.endswith("_dup")])
+
+    # put metadata columns at the end
+    metadata_cols = ["group", "y", "days_after_treatment", "chip", "recording", "file"]
+    feature_cols = [col for col in df.columns if col not in metadata_cols]
+    df = df[feature_cols + metadata_cols]
+
+    #df = pd.concat([df1, df2], axis=1)
     # remove duplicate columns
-    df = df.loc[:, ~df.columns.duplicated()]
+    #df = df.loc[:, ~df.columns.duplicated()]
 
     # Delete all rows where 'days_after_treatment' is NaN
     df = df.dropna(subset=["days_after_treatment"])

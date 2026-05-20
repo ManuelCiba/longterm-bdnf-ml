@@ -34,6 +34,7 @@ def preprocess_and_plot(df, target_path):
     if 1:
         all_results = []
         for feature in feature_cols:
+
             # Perform statistical testing
             for day in df_mean["days_after_treatment"].unique():
                 drug_vals = df_mean[(df_mean["days_after_treatment"] == day) & (df_mean["group"] == "DRUG")][feature]
@@ -77,6 +78,7 @@ def preprocess_and_plot(df, target_path):
     )[1]
 
     # plot results
+    group_order = ["SHAM", "DRUG"]
     for feature in feature_cols:
 
         df_p_feature = df_p[df_p["feature"] == feature]
@@ -104,6 +106,7 @@ def preprocess_and_plot(df, target_path):
                 x="days_after_treatment",
                 y=feature,
                 hue="group",
+                hue_order=group_order,
                 data=df_mean,
                 split=True,
                 inner=None,#"point",          # None, "point", "stick", "box"
@@ -137,6 +140,7 @@ def preprocess_and_plot(df, target_path):
                 x="days_after_treatment",
                 y=feature,
                 hue="group",
+                hue_order=group_order,
                 palette=palette,
                 data=df_mean,
                 dodge=True,
@@ -230,7 +234,47 @@ def preprocess_and_plot(df, target_path):
         full_target_path = os.path.join(target_path, feature + '.pdf')
         hd.save_figure(plt.gcf(), full_target_path)
         print(f"Saved feature set to {full_target_path}")
-        
+
+def plot_lineplot(df, target_path):   
+    # Identify feature columns (exclude non-feature columns)
+    non_feature_cols = ["chip", "y", "group", "days_after_treatment", "file", "recording"]
+    feature_cols = [col for col in df.columns if col not in non_feature_cols]
+    
+    # Group by 'chip', 'group', and 'days_after_treatment', calculate the mean
+    df_mean = df.groupby(["chip", "days_after_treatment"], as_index=False)[feature_cols].mean()
+
+    # plot results
+    for feature in feature_cols:
+
+        # Create the plot
+        plt.figure(figsize=(10, 6))
+        # tab10 is default palette
+        palette = "rocket" #"magma" #"viridis"
+
+        ax = sns.lineplot(
+            data=df_mean,
+            x="days_after_treatment",
+            y=feature,
+            hue="chip",
+            style="chip",        # marker style per chip
+            markers=True,        # automatically choose different markers
+            dashes=False,        # keep lines solid
+        )
+
+        # Increase font sizes
+        plt.xlabel("Days After Treatment", fontsize=16)
+        plt.ylabel(feature, fontsize=16)
+        plt.title(f"{feature} by Group Over Time", fontsize=18)
+        plt.xticks(fontsize=14)#, rotation=90)
+        plt.yticks(fontsize=14)
+        plt.legend(fontsize=14, title_fontsize=15)
+
+        # Save the plot
+        plt.tight_layout()
+        feature = feature.replace("/", "_per_").replace(" ", "_")
+        full_target_path = os.path.join(target_path, feature + '.pdf')
+        hd.save_figure(plt.gcf(), full_target_path)
+        print(f"Saved feature set to {full_target_path}")     
 
 def lmm_daywise_group_pvalues(df_mean, feature, subject_col="chip"):
     """
@@ -391,7 +435,9 @@ if __name__ == '__main__':
             # Drop rows where days_after_treatment < 0
             #df = df.loc[df["days_after_treatment"] >= 0].reset_index(drop=True)
 
-            preprocess_and_plot(df, target_path)
+            plot_lineplot(df, target_path + "/lineplots")
+            preprocess_and_plot(df, target_path + "/violinplots")
+            
 
     print("Script finished: script_6_0_statistics.py")
 

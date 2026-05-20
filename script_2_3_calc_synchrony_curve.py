@@ -37,7 +37,7 @@ def calculate_and_plot_and_save_synchrony(source_path, target_path, window_size)
     if settings.FLAG_PLOT:
         figure_path = target_path.replace("csv", "pdf")
         hd.save_figure(fig, figure_path)
-    plt.close(fig)
+        plt.close(fig)
 
     # Save the results 
     hd.save_df_as_csv(df_curve, target_path)
@@ -45,22 +45,25 @@ def calculate_and_plot_and_save_synchrony(source_path, target_path, window_size)
 
 def _calculate_synchrony(st_list, window_size):
 
+    fig = 0
+
     # init results, init figure
     df_result = pd.DataFrame()
-    plt.figure(figsize=(8, 6))
-    fig = plt.gcf()
- 
+    
     # Define t_start and t_stop for synchrony calculation
     # important to define so that synchrony is calculated for the same bins for all spike trains
     # the same bins are needed to compare synchrony curves since they are used as features for ML
     t_start = st_list[0].t_start.rescale(pq.s)  # start time of the first spike train
-    t_stop = t_start + window_size 
+    t_stop = st_list[0].t_stop.rescale(pq.s) #t_start + window_size 
     s, trace = spike_contrast(st_list, return_trace=True, t_start=t_start, t_stop=t_stop)  # return_trace=True: returns not only synchrony value but also curves
     result = trace.synchrony  # save whole synchrony curve, not only max value
     names = ["Spike-contrast (" + str(round(bin_size, 3)) + ")" for bin_size in trace.bin_size]
     df_result = pd.DataFrame(data=[result], columns=names)
-    if not np.isnan(s):
-        fig = _plot_spike_contrast(trace, st_list)
+    if settings.FLAG_PLOT:
+        if not np.isnan(s):
+            plt.figure(figsize=(8, 6))
+            fig = plt.gcf()
+            fig = _plot_spike_contrast(trace, st_list)
 
 
     return df_result, fig
