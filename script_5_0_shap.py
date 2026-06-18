@@ -143,7 +143,7 @@ def calculate_correlation_and_feature_groups(df_features):
     df_features = df_features.loc[:, df_features.nunique() > 1]
 
     # drop non-feature columns and calculate correlation matrix
-    corr = df_features.drop(columns=['y', 'chip', 'days_after_treatment']).corr(method='spearman')
+    corr = df_features.drop(columns=['y', 'chip', settings.condition_col]).corr(method='spearman')
 
     # cluster features based on correlation
     distance = 1 - np.abs(corr)
@@ -349,7 +349,7 @@ def _plot_combined_shap_dependence(shap_pkl_path, scaler, scaled_columns):
     X_train_sampled_list = data['X_train_sampled_list']
 
     # define which feature should be on the x axis
-    feature_name = "days_after_treatment"
+    feature_name = settings.condition_col
 
     # combine all shap values and X_train samples
     combined_shap = _combine_all_shap_values(shap_values_list, class_index=1)
@@ -451,7 +451,7 @@ def OLDcalculate_shap_values(base_folder, model_name, X_train_list, df_train_res
         #    _plot_shap_dependence(
         #        shap_values,
         #        X_train_sampled,
-        #        feature_name="days_after_treatment",
+        #        feature_name=settings.condition_col,
         #        output_path=output_path_dep,
         #        interaction_index=None
         #    )
@@ -556,7 +556,7 @@ def _inverse_transform_selected(X_train, scaler, scaled_columns):
     return X_rescaled
 
 # TODO
-def TODO_plot_shap_with_reference(combined_shap, combined_X, feature_name="days_after_treatment", class_index=1):
+def TODO_plot_shap_with_reference(combined_shap, combined_X, feature_name=settings.condition_col, class_index=1):
     """
     Plots a SHAP dependence plot for a feature with a horizontal reference line
     at the mean absolute SHAP value across all features, and a bar plot ranking

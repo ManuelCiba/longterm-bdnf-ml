@@ -1,7 +1,9 @@
 import os
 import quantities as pq
 
-FLAG_DATA_DMT_DIV8 = 1
+FLAG_DATA_DMT_DIV30_ACUTE = 1
+FLAG_DATA_DMT_DIV8_LONGTERM = 0
+FLAG_DATA_DMT_DIV8_ACUTE = 0
 FLAG_DATA_LSD_ISMAEL = 0   # Set to True if you want to use Ismael's data
 FLAG_DATA_LSD_WENUS = 0    # Set to True if you want to use WENUS data
 FLAG_DATA_BDNF = 0    # Set to True if you want to use BDNF data
@@ -12,28 +14,80 @@ FLAG_ESTRANGE_DATA2_XRAY = 0 # XRAY vs SHAM
 FLAG_ESTRANGE_DATA2_TC_XRAY = 0 # Tumor cells + XRAY vs Sham
 FLAG_ESTRANGE_DATA2_TC = 0  # Tumor cells only vs Sham (it uses data from DATA2_XRAY as sham and DATA2_TC_XRAY as "drug")
 
-if FLAG_DATA_DMT_DIV8:
-    # local path to the data (laptop)
-    #PATH_DATA_FOLDER = "/home/mc/Documents/Data/DRUG/IsmaelLozanoFlores/LongTerm/TS/"
+FLAG_ACUTE_MODE = 0 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
+condition_col = "days_after_treatment" # column name in the feature set dataframe that contains the condition (e.g. days after treatment or drug concentration)
+# TODO: rename to x
+
+if FLAG_DATA_DMT_DIV30_ACUTE:
+
+    # Acute mode settings
+    FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
+    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    X_TICKS = [0, 1, 2, 3] 
+    X_TICK_LABELS = ["0", "90 (20min)", "90 (90min)", "0 (24h)"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
+    X_LABEL = "DMT in µM"
+    condition_col = "condition" # TODO rename to x (same for acute and long-term data)
 
     # KAI path to the data (server)
-    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/DMT/Longterm_DIV8/TS/"
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/DMT/20260424/Acute_DIV30/TS/"
 
     # Path where results will be saved
-    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "DMT_DIV8")
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "DMT_DIV30_ACUTE")
+    if FLAG_RELATIVE:
+        PATH_RESULTS_FOLDER += "_relative"
 
-    WELLS_SHAM = ['A1_Plate01', 'A1_Plate02', 'A1_Plate03', 'A1_Plate04',
-                 'A2_Plate01', 'A2_Plate02', 'A2_Plate03', 'A2_Plate04',
-                 'A3_Plate01', 'A3_Plate02', 'A3_Plate03', 'A3_Plate04']
-    WELLS_DRUG = ['B1_Plate01', 'B1_Plate02', 'B1_Plate03', 'B1_Plate04',
-                  'B2_Plate01', 'B2_Plate02', 'B2_Plate03', 'B2_Plate04',
-                  'B3_Plate01', 'B3_Plate02', 'B3_Plate03', 'B3_Plate04',]
+    WELLS_SHAM = ['A1_132-1807', 'A1_141-2608', 'A1_141-2511', 'A1_141-2532',
+                 'A2_132-1807', 'A2_141-2608', 'A2_141-2511', 'A2_141-2532',
+                 'A3_132-1807', 'A3_141-2608', 'A3_141-2511', 'A3_141-2532']
+    WELLS_DRUG = ['B1_132-1807', 'B1_141-2608', 'B1_141-2511', 'B1_141-2532',
+                  'B2_132-1807', 'B2_141-2608', 'B2_141-2511', 'B2_141-2532',
+                  'B3_132-1807', 'B3_141-2608', 'B3_141-2511', 'B3_141-2532',]
+    
+    # 19.05.2026: DMT application: 132-1807, 141-2608
+    # 21.05.2026: DMT application: 141-2511, 141-2532
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_160000"  # ?
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_160000"  # ?
+    DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    LABEL_SHAM = "Sham"
+    LABEL_DRUG = "DMT"
+
+if FLAG_DATA_DMT_DIV8_LONGTERM:
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/DMT/20260424/Longterm_DIV8/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "DMT_DIV8_LONGTERM")
+
+    WELLS_SHAM = ['A1_132-1807', 'A1_141-2608', 'A1_141-2511', 'A1_141-2532',
+                 'A2_132-1807', 'A2_141-2608', 'A2_141-2511', 'A2_141-2532',
+                 'A3_132-1807', 'A3_141-2608', 'A3_141-2511', 'A3_141-2532']
+    WELLS_DRUG = ['B1_132-1807', 'B1_141-2608', 'B1_141-2511', 'B1_141-2532',
+                  'B2_132-1807', 'B2_141-2608', 'B2_141-2511', 'B2_141-2532',
+                  'B3_132-1807', 'B3_141-2608', 'B3_141-2511', 'B3_141-2532',]
+    
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_160000"  # ?
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_160000"  # ?
+    DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    LABEL_SHAM = "Sham"
+    LABEL_DRUG = "DMT"
+
+if FLAG_DATA_DMT_DIV8_ACUTE:
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/DMT/20260424/Acute_DIV8/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "DMT_DIV8_ACUTE")
+
+    # Plate2: 141-2608
+    WELLS_SHAM = ['A1_141-2608','A2_141-2608','A3_141-2608']
+    WELLS_DRUG = ['B1_141-2608','B2_141-2608','B3_141-2608']
     
     DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_160000"  # ?
     DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_160000"  # ?
     DATE_TIME_LAST_RECORDING = "" # set to "" for all data
     LABEL_SHAM = "Ctrl"
     LABEL_DRUG = "DMT"
+
 
 if FLAG_DATA_LSD_ISMAEL:
     # local path to the data (laptop)

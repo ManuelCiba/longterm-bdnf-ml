@@ -27,10 +27,10 @@ def LINEplot_auc_over_time(df, window_overlap_value=75, bin_size_value=1, base_f
     ].copy()
 
     # Extract numeric day from string, e.g., "day_31" -> 31
-    filtered_df['Day_num'] = filtered_df['Day'].apply(lambda s: float(s[4:]))
+    filtered_df['x'] = filtered_df['Day'].apply(lambda s: float(s[4:]))
 
     # Sort by day
-    filtered_df = filtered_df.sort_values(by='Day_num')
+    filtered_df = filtered_df.sort_values(by='x')
 
     # Create figure
     plt.figure(figsize=(10, 6))
@@ -41,7 +41,7 @@ def LINEplot_auc_over_time(df, window_overlap_value=75, bin_size_value=1, base_f
 
     for i, model in enumerate(models):
         df_model = filtered_df[filtered_df['ML model'] == model]
-        x = df_model['Day_num']
+        x = df_model['x']
         y = df_model['AUC']
         y_lower = df_model['AUC_CI_lower']
         y_upper = df_model['AUC_CI_upper']
@@ -71,7 +71,7 @@ def LINEplot_auc_over_time(df, window_overlap_value=75, bin_size_value=1, base_f
     plt.close()
     print(f"Saved AUC-over-time plot to: {full_path}")
 
-def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folder="."):
+def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folder=".", xlabel="", xticks="", xtick_labels=""):
     """
     Plot AUC over time as bar plots with error bars, generating one plot per ML model.
 
@@ -89,10 +89,19 @@ def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folde
     ].copy()
 
     # Extract numeric day from string, e.g., "day_31" -> 31
-    filtered_df['Day_num'] = filtered_df['Day'].apply(lambda s: float(s[4:]))
-
-    # Sort by day
-    filtered_df = filtered_df.sort_values(by='Day_num')
+    if xticks == "":
+        filtered_df['x'] = filtered_df['Day'].apply(lambda s: float(s[4:]))
+        # Sort by day
+        filtered_df = filtered_df.sort_values(by='x')
+    else:
+        # If xticks are provided, we assume that the 'Day' column contains the same values as xticks, so we can directly use them as numeric values
+        filtered_df['x'] = filtered_df['Day']
+        order = {label: i for i, label in enumerate(xtick_labels)}
+        filtered_df = filtered_df.sort_values(
+            by="x",
+            key=lambda s: s.map(order)
+        )
+    
 
     models = filtered_df['ML model'].unique()
 
@@ -105,7 +114,12 @@ def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folde
         yerr_upper = df_model['AUC_CI_upper'] - y
         yerr = [yerr_lower.values, yerr_upper.values]
 
-        x = df_model['Day_num']
+        x = df_model['x']
+
+        # create xticklabels if not provided
+        if xticks == "":
+            xticks = x
+            xtick_labels = [f"Day {int(d)}" for d in x]
 
         # Create figure
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -132,12 +146,12 @@ def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folde
             )
 
         # Labels & styling
-        ax.set_title(f"AUC over Time - {model}", fontsize=18)
-        ax.set_xlabel("Days after Treatment", fontsize=16)
+        ax.set_title(f"AUC - {model}", fontsize=18)
+        ax.set_xlabel(xlabel, fontsize=16)
         ax.set_ylabel("AUC", fontsize=16)
         ax.set_ylim(0.0, 1.05)
-        ax.set_xticks(x)
-        ax.set_xticklabels([f"Day {int(d)}" for d in x], rotation=45, fontsize=16)
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xtick_labels, rotation=45, fontsize=16)
         ax.set_yticks(np.arange(0, 1.1, 0.1))
         ax.tick_params(axis='y', labelsize=14)
 
@@ -147,7 +161,7 @@ def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folde
         plt.tight_layout()
 
         # Save figure
-        full_path = os.path.join(base_folder, f"AUC_over_time_{model}.pdf")
+        full_path = os.path.join(base_folder, f"AUC_summary_{model}.pdf")
         plt.savefig(full_path)
         plt.close()
         print(f"Saved AUC plot for {model} to: {full_path}")
@@ -170,8 +184,19 @@ if __name__ == '__main__':
         # relative to %
         df["Window overlap"] = df["Window overlap"] * 100
 
+        if settings.FLAG_ACUTE_MODE == 0:
+            condition_col = "days_after_treatment"
+            xlabel = "Days After Treatment"
+            xticks = ""
+            xtick_labels = ""
+        else:
+            condition_col = "condition"
+            xlabel = settings.X_LABEL
+            xticks = settings.X_TICKS
+            xtick_labels = settings.X_TICK_LABELS
+
         #plot_auc_over_time(df, base_folder=base_folder)
-        plot_auc_per_model(df, base_folder=base_folder)
+        plot_auc_per_model(df, base_folder=base_folder, xlabel=xlabel, xticks=xticks, xtick_labels=xtick_labels)
 
 
 

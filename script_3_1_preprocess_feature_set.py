@@ -11,7 +11,59 @@ import pickle
 import numpy as np
 
 
-def preprocess_df_features(df_features):
+def preprocess_df_features_align_files(df_features):
+    
+    # get number of x-ticks (e.g. condition1: 0µM, condition2: 20µM ect.)
+    n_ticks = len(settings.X_TICKS)
+    
+    # get number of windows per file (a recording of a sample was split into multiple time windows)
+    n_windows = (
+        df_features['file']
+        .str.extract(r'window(\d+)\.csv')[0]
+        .astype(int)
+        .max()
+        + 1
+    )
+
+    # get labels for the x-ticks
+    labels = settings.X_TICK_LABELS
+    
+    # assign condition labels to each row. This only works if df_features is sorted!
+    conditions = []
+    condition_idx = 0
+    for i, filename in enumerate(df_features['file']):
+        # Advance to the next timepoint whenever a new window00 starts
+        if i > 0 and filename == 'window00.csv':
+            condition_idx += 1
+
+        conditions.append(labels[condition_idx % len(labels)])
+    
+    df_features['condition'] = conditions
+
+    n_per_x = (df_features.groupby("condition").size().reset_index(name="n_recordings"))
+
+    if settings.FLAG_RELATIVE:
+        metadata_cols = ["chip", "condition", "y", "file", "recording", "group"]
+        feature_cols = [c for c in df_features.columns if c not in metadata_cols]
+        df_features_norm = df_features.copy()
+
+        baseline_means = (
+            df_features[df_features["condition"] == "0"]
+            .groupby("chip")[feature_cols]
+            .mean()
+        )
+
+        for chip, baseline in baseline_means.iterrows():
+            mask = df_features_norm["chip"] == chip
+            df_features_norm.loc[mask, feature_cols] = (
+                df_features_norm.loc[mask, feature_cols] / baseline
+            )
+
+        df_features = df_features_norm
+
+    return df_features, n_per_x
+
+def preprocess_df_features_align_timestamps(df_features):
     # calculate the difference between features after DRUG application and before DRUG application
     # this is done by subtracting the mean of the features before DRUG application from the raw features after DRUG application
     
@@ -150,7 +202,12 @@ if __name__ == '__main__':
             full_source_path = os.path.join(source_path, 'feature_set_raw.csv')
             df_feature_set = hd.load_csv_as_df(full_source_path)
             # preprocess 
-            df_feature_preprocessed, n_per_day = preprocess_df_features(df_feature_set)
+
+            if settings.FLAG_ACUTE_MODE == 0:
+                df_feature_preprocessed, n_per_day = preprocess_df_features_align_timestamps(df_feature_set)
+            else:
+                df_feature_preprocessed, n_per_day = preprocess_df_features_align_files(df_feature_set)
+
             # save the preprocessed feature set
             full_target_path = os.path.join(target_path, 'feature_set_preprocessed.csv')
             hd.save_df_as_csv(df_feature_preprocessed, full_target_path)

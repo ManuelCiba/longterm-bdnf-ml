@@ -45,10 +45,9 @@ def _preprocess_and_check_data(df_features, group_name='chip'):
     print("Number of rows in df_features: " + str(len(df_features)))
 
     # split the df_features into y and X and groups
-    y = df_features['y']  # 'y' is the column with class labels
+    #y = df_features['y']  # 'y' is the column with class labels
     X = df_features.drop(columns=['y', group_name])  # Drop 'y' and 'chip' columns to get features
-    groups = df_features[group_name].values
-
+    #groups = df_features[group_name].values
 
     print("Number of feature columns before cleaning: " + str(X.shape[1]))
 
@@ -62,6 +61,16 @@ def _preprocess_and_check_data(df_features, group_name='chip'):
     X = X.loc[:, X.isna().mean() < nan_threshold]
     print("Number of feature columns after removing columns with more than 80% NaNs: " + str(X.shape[1]))
 
+    # Drop rows with only NaNs in all feature columns
+    print("Number of rows: " + str(X.shape[0]))
+    feature_cols = X.columns
+    valid_rows = ~df_features[feature_cols].isna().all(axis=1)
+    df_features = df_features.loc[valid_rows].reset_index(drop=True)
+    X = X.loc[valid_rows].reset_index(drop=True)
+    y = df_features['y']
+    groups = df_features[group_name].values
+    print("Number of rows after removing rows with all NaNs: " + str(X.shape[0]))
+    
 
     # 1) calculate class distribution per group
     df = pd.DataFrame({'y': y, 'group': groups})

@@ -1,3 +1,7 @@
+#
+# Preprocessed data from script_3_1_preprocess_feature_set.py is used to create violin plots and line plots, and to perform statistical testing (Mann-Whitney U test and LMM) between DRUG and SHAM groups at each day after treatment.
+#  
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -17,18 +21,18 @@ import patsy
 correction_method = "p" # "p": no correction, "p_fdr": fdr correction, "p_bonf": bonferroni correction
 
 
-def preprocess_and_plot(df, target_path):
+def preprocess_and_plot(df, condition_col, xlabel, target_path):
     """
     Preprocess the data and create violin plots with statistical significance testing.
     Args:
         df (pd.DataFrame): Input DataFrame containing the features and metadata.
     """
     # Identify feature columns (exclude non-feature columns)
-    non_feature_cols = ["chip", "y", "group", "days_after_treatment", "file", "recording"]
+    non_feature_cols = ["chip", "y", "group", condition_col, "file", "recording"]
     feature_cols = [col for col in df.columns if col not in non_feature_cols]
     
-    # Group by 'chip', 'group', and 'days_after_treatment', calculate the mean
-    df_mean = df.groupby(["chip", "group", "days_after_treatment"], as_index=False)[feature_cols].mean()
+    # Group by 'chip', 'group', and 'condition_col', calculate the mean
+    df_mean = df.groupby(["chip", "group", condition_col], as_index=False)[feature_cols].mean()
 
     # simple mann whitney u test
     if 1:
@@ -36,9 +40,9 @@ def preprocess_and_plot(df, target_path):
         for feature in feature_cols:
 
             # Perform statistical testing
-            for day in df_mean["days_after_treatment"].unique():
-                drug_vals = df_mean[(df_mean["days_after_treatment"] == day) & (df_mean["group"] == "DRUG")][feature]
-                sham_vals = df_mean[(df_mean["days_after_treatment"] == day) & (df_mean["group"] == "SHAM")][feature]
+            for day in df_mean[condition_col].unique():
+                drug_vals = df_mean[(df_mean[condition_col] == day) & (df_mean["group"] == "DRUG")][feature]
+                sham_vals = df_mean[(df_mean[condition_col] == day) & (df_mean["group"] == "SHAM")][feature]
                 
                 drug_vals = drug_vals.dropna()
                 sham_vals = sham_vals.dropna()
@@ -90,7 +94,7 @@ def preprocess_and_plot(df, target_path):
         palette = "rocket" #"magma" #"viridis"
         if 0:
             ax = sns.boxplot(
-                x="days_after_treatment", y=feature, hue="group", 
+                x="condition_col", y=feature, hue="group", 
                 data=df_mean, 
                 palette=palette,
                 flierprops=dict(marker='.', markersize=4, linestyle='none', markerfacecolor='gray', alpha=0.7),  # small dot outliers
@@ -103,7 +107,7 @@ def preprocess_and_plot(df, target_path):
         # --- Clean violin without that tiny embedded box ---
         if 1:
             ax = sns.violinplot(
-                x="days_after_treatment",
+                x=condition_col,
                 y=feature,
                 hue="group",
                 hue_order=group_order,
@@ -118,7 +122,7 @@ def preprocess_and_plot(df, target_path):
 
         # --- Add proper full-size boxplots on top of the violin ---
         #sns.boxplot(
-        #    x="days_after_treatment",
+        #    x="condition_col",
         #    y=feature,
         #    hue="group",
         #    data=df_mean,
@@ -137,7 +141,7 @@ def preprocess_and_plot(df, target_path):
         # --- Add raw data points (jittered) ---
         if 1:
             sns.stripplot(
-                x="days_after_treatment",
+                x=condition_col,
                 y=feature,
                 hue="group",
                 hue_order=group_order,
@@ -154,7 +158,7 @@ def preprocess_and_plot(df, target_path):
             )
 
         # Increase font sizes
-        plt.xlabel("Days After Treatment", fontsize=16)
+        plt.xlabel(xlabel, fontsize=16)
         plt.ylabel(feature, fontsize=16)
         plt.title(f"{feature} by Group Over Time", fontsize=18)
         plt.xticks(fontsize=14)#, rotation=90)
@@ -174,7 +178,7 @@ def preprocess_and_plot(df, target_path):
             # ------------------------------------------------------------
             # Add n-labels per box (SHAM and DRUG for each day)
             # ------------------------------------------------------------
-            days = sorted(df_mean['days_after_treatment'].unique())
+            days = sorted(df_mean['condition_col'].unique())
             groups = df_mean['group'].unique().tolist()  # e.g., ['SHAM','DRUG']
             num_groups = len(groups)
 
@@ -190,7 +194,7 @@ def preprocess_and_plot(df, target_path):
 
                 # Count n
                 n = df_mean[
-                    (df_mean["days_after_treatment"] == day) &
+                    (df_mean[condition_col] == day) &
                     (df_mean["group"] == group)
                 ].shape[0]
 
@@ -218,7 +222,7 @@ def preprocess_and_plot(df, target_path):
         if 0:
             # Add vertical lines to indicate integer day changes
             # Get sorted unique x positions
-            x_values = sorted(df_mean['days_after_treatment'].unique())
+            x_values = sorted(df_mean['condition_col'].unique())
             # Loop through and check where integer day changes
             for i in range(1, len(x_values)):
                 if int(x_values[i]) != int(x_values[i-1]):
@@ -226,7 +230,7 @@ def preprocess_and_plot(df, target_path):
 
 
         # Add significance stars
-        _add_significance_stars_grouped(p_values, df_mean, "days_after_treatment", feature)
+        _add_significance_stars_grouped(p_values, df_mean, condition_col, feature)
 
         # Save the plot
         plt.tight_layout()
@@ -235,13 +239,13 @@ def preprocess_and_plot(df, target_path):
         hd.save_figure(plt.gcf(), full_target_path)
         print(f"Saved feature set to {full_target_path}")
 
-def plot_lineplot(df, target_path):   
+def plot_lineplot(df, condition_col, xlabel, target_path):   
     # Identify feature columns (exclude non-feature columns)
-    non_feature_cols = ["chip", "y", "group", "days_after_treatment", "file", "recording"]
+    non_feature_cols = ["chip", "y", "group", condition_col, "file", "recording"]
     feature_cols = [col for col in df.columns if col not in non_feature_cols]
     
-    # Group by 'chip', 'group', and 'days_after_treatment', calculate the mean
-    df_mean = df.groupby(["chip", "days_after_treatment"], as_index=False)[feature_cols].mean()
+    # Group by 'chip', 'group', and 'condition_col', calculate the mean
+    df_mean = df.groupby(["chip", condition_col], as_index=False)[feature_cols].mean()
 
     # plot results
     for feature in feature_cols:
@@ -253,7 +257,7 @@ def plot_lineplot(df, target_path):
 
         ax = sns.lineplot(
             data=df_mean,
-            x="days_after_treatment",
+            x=condition_col,
             y=feature,
             hue="chip",
             style="chip",        # marker style per chip
@@ -262,7 +266,7 @@ def plot_lineplot(df, target_path):
         )
 
         # Increase font sizes
-        plt.xlabel("Days After Treatment", fontsize=16)
+        plt.xlabel(xlabel, fontsize=16)
         plt.ylabel(feature, fontsize=16)
         plt.title(f"{feature} by Group Over Time", fontsize=18)
         plt.xticks(fontsize=14)#, rotation=90)
@@ -282,7 +286,7 @@ def lmm_daywise_group_pvalues(df_mean, feature, subject_col="chip"):
     """
 
     data = df_mean.copy().reset_index(drop=True)
-    data["day_f"] = data["days_after_treatment"].astype("category")
+    data["day_f"] = data["condition_col"].astype("category")
 
     # Quote the feature name safely
     formula = f"Q('{feature}') ~ C(group) * C(day_f)"
@@ -432,11 +436,19 @@ if __name__ == '__main__':
             full_source_path = os.path.join(source_path, 'feature_set_preprocessed.csv')
             df = hd.load_csv_as_df(full_source_path)
 
-            # Drop rows where days_after_treatment < 0
-            #df = df.loc[df["days_after_treatment"] >= 0].reset_index(drop=True)
+            # Drop rows where condition_col < 0
+            #df = df.loc[df["condition_col"] >= 0].reset_index(drop=True)
 
-            plot_lineplot(df, target_path + "/lineplots")
-            preprocess_and_plot(df, target_path + "/violinplots")
+            if settings.FLAG_ACUTE_MODE == 0:
+                condition_col = "days_after_treatment"
+                xlabel = "Days After Treatment"
+            else:
+                condition_col = "condition"
+                xlabel = settings.X_LABEL
+
+
+            plot_lineplot(df, condition_col, xlabel, target_path + "/lineplots")
+            preprocess_and_plot(df, condition_col, xlabel, target_path + "/violinplots")
             
 
     print("Script finished: script_6_0_statistics.py")

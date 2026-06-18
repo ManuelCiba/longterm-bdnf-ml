@@ -48,14 +48,16 @@ def get_feature_set_df(source_path):
             # Define the full path to the recording folder
             rec_folder_path = os.path.join(chip_folder_path, rec_folder)
 
-            # define label that represents the days after DRUG treatment
-            # get the date from the folder name
-            date_time_of_file = datetime.strptime(rec_folder, "%Y%m%d_%H%M%S")
-            date_time_DRUG_finished = datetime.strptime(settings.DATE_TIME_DRUG_TREATMENT_FINISHED, "%Y%m%d_%H%M%S")
-            
-            # Calculate the difference as a fraction of a day
-            delta = date_time_of_file - date_time_DRUG_finished
-            label_days_after_treatment = delta.total_seconds() / (24 * 3600)
+            # old, now is done in preprocess step
+            if 0:
+                # define label that represents the days after DRUG treatment
+                # get the date from the folder name
+                date_time_of_file = datetime.strptime(rec_folder, "%Y%m%d_%H%M%S")
+                date_time_DRUG_finished = datetime.strptime(settings.DATE_TIME_DRUG_TREATMENT_FINISHED, "%Y%m%d_%H%M%S")
+                
+                # Calculate the difference as a fraction of a day
+                delta = date_time_of_file - date_time_DRUG_finished
+                label_days_after_treatment = delta.total_seconds() / (24 * 3600)
 
             # List all .csv files in the folder
             files = [f for f in os.listdir(rec_folder_path) if f.endswith('.csv')]
@@ -72,7 +74,7 @@ def get_feature_set_df(source_path):
                 # Add a new column for the label
                 df['group'] = label_group
                 df['y'] = label_y
-                df['days_after_treatment'] = label_days_after_treatment
+                #df['days_after_treatment'] = label_days_after_treatment
                 df['chip'] = chip_folder
                 df['recording'] = rec_folder
                 df['file'] = file
@@ -125,7 +127,8 @@ def _merge_two_dataframes_together(df1, df2):
     df = df.drop(columns=[c for c in df.columns if c.endswith("_dup")])
 
     # put metadata columns at the end
-    metadata_cols = ["group", "y", "days_after_treatment", "chip", "recording", "file"]
+    metadata_cols = ["group", "y", "chip", "recording", "file"]
+    #metadata_cols = ["group", "y", "days_after_treatment", "chip", "recording", "file"]
     feature_cols = [col for col in df.columns if col not in metadata_cols]
     df = df[feature_cols + metadata_cols]
 
@@ -134,7 +137,7 @@ def _merge_two_dataframes_together(df1, df2):
     #df = df.loc[:, ~df.columns.duplicated()]
 
     # Delete all rows where 'days_after_treatment' is NaN
-    df = df.dropna(subset=["days_after_treatment"])
+    #df = df.dropna(subset=["days_after_treatment"])
     return df
 
 def bin_time(x):

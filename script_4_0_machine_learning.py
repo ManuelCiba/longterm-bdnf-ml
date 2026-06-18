@@ -15,7 +15,7 @@ from lib.data_handler import hd
 import settings
 
 
-def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
+def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xlabel):
     
     # check if unsupported models are in the list
     if 'RF' in models:
@@ -41,7 +41,7 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
         df_features = df_features.drop(columns=['group', 'recording', 'file']) 
 
         # get days after treatment
-        days = df_features['days_after_treatment'].unique()
+        days = df_features[condition_col].unique()
 
         # for each model:
         for model in models:
@@ -55,7 +55,11 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
                 # check if already calculated
                 source_path = path_experiment
                 target_path = source_path.replace(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
-                target_path = os.path.join(target_path, model, 'day_' + str(day).zfill(2))
+
+                if settings.FLAG_ACUTE_MODE == 0:
+                    target_path = os.path.join(target_path, model, 'day_' + str(day).zfill(2))
+                else:
+                    target_path = os.path.join(target_path, model, day)
                 full_path = os.path.join(target_path, 'df_train_results.pkl')
                 if os.path.isfile(full_path):
                     print("Already calculated: " + full_path)
@@ -64,8 +68,8 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
                     print("Calculating: " + full_path)
 
                 # only keep data of the specific day
-                df_features_day = df_features[df_features['days_after_treatment'] == day]
-                df_features_day = df_features_day.drop(columns=['days_after_treatment'])
+                df_features_day = df_features[df_features[condition_col] == day]
+                df_features_day = df_features_day.drop(columns=[condition_col])
 
                 try:
                     df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired_optatune.call(model, df_features_day)
@@ -86,7 +90,7 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
             print("Calculation finished: " + full_path)
 
 
-def calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
+def calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xlabel):
     # get paths of all experiments
     path_experiment_list = _get_path_experiment_list()
 
@@ -159,7 +163,14 @@ if __name__ == '__main__':
         # define folder name to save results
         TARGET_DATA_FOLDER = SOURCE_DATA_FOLDER.replace("0_feature_set", "1_ML")
 
+        if settings.FLAG_ACUTE_MODE == 0:
+            condition_col = "days_after_treatment"
+            xlabel = "Days After Treatment"
+        else:
+            condition_col = "condition"
+            xlabel = settings.X_LABEL
+
         # do the machine learning
         models = settings.ML_MODELS
-        run_by_day(models,SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
-        calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
+        run_by_day(models,SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xlabel)
+        calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xlabel)
