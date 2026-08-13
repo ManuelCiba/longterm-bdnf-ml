@@ -19,7 +19,7 @@ def compute_networkburst_features(spiketrain_list, isi_threshold=0.1*pq.s, min_s
     if flag_plot:
         fig = plot_spiketrains_with_network_bursts(spiketrain_list, network_bursts)
 
-    features = network_burst_features(network_bursts, spiketrain_list, rec_dur_s)
+    features = network_burst_features(network_bursts, bursts_per_channel, spiketrain_list, rec_dur_s)
     
     return features, fig
 
@@ -74,7 +74,7 @@ def detect_network_bursts(bursts_per_channel, min_active_bursts=3, min_duration=
     return network_bursts
 
 
-def network_burst_features(network_bursts, spiketrains, rec_dur):
+def network_burst_features(network_bursts, bursts_per_channel, spiketrains, rec_dur):
 
     """
     Compute standard network burst statistics from detected network bursts.
@@ -112,13 +112,23 @@ def network_burst_features(network_bursts, spiketrains, rec_dur):
         
         spikes_in_burst = 0
         active_channels = 0
+        # Count all spikes occurring during the network burst
         for st in spiketrains:
             spikes = st.magnitude.flatten()
             n_spikes = np.sum((spikes >= start) & (spikes <= end))
             spikes_in_burst += n_spikes
-            if n_spikes > 0:
-                active_channels += 1
-        
+
+        # Count electrodes that have an electrode-level burst
+        # overlapping with the network burst
+        for ch, bursts in bursts_per_channel.items():
+            for burst in bursts:
+                burst_start = burst["start"]
+                burst_end = burst["end"]
+
+                if burst_start <= end and burst_end >= start:
+                    active_channels += 1
+                    break
+
         nb_spikes.append(spikes_in_burst)
         nb_active_electrodes.append(active_channels)
     

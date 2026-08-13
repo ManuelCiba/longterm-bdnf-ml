@@ -15,7 +15,7 @@ from lib.data_handler import hd
 import settings
 
 
-def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xlabel):
+def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
     
     # check if unsupported models are in the list
     if 'RF' in models:
@@ -38,10 +38,10 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xl
         df_features = hd.load_csv_as_df(full_path, index_col=False)
 
         # drop columns that are not needed for the machine learning
-        df_features = df_features.drop(columns=['group', 'recording', 'file']) 
+        df_features = df_features.drop(columns=settings.NOT_NEEDED_FOR_ML_COLS) 
 
         # get days after treatment
-        days = df_features[condition_col].unique()
+        days = df_features["x_tick_labels"].unique()
 
         # for each model:
         for model in models:
@@ -68,8 +68,8 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xl
                     print("Calculating: " + full_path)
 
                 # only keep data of the specific day
-                df_features_day = df_features[df_features[condition_col] == day]
-                df_features_day = df_features_day.drop(columns=[condition_col])
+                df_features_day = df_features[df_features["x_tick_labels"] == day]
+                df_features_day = df_features_day.drop(columns=["x_tick_labels"])
 
                 try:
                     df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired_optatune.call(model, df_features_day)
@@ -90,7 +90,7 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xl
             print("Calculation finished: " + full_path)
 
 
-def calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xlabel):
+def calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
     # get paths of all experiments
     path_experiment_list = _get_path_experiment_list()
 
@@ -163,14 +163,7 @@ if __name__ == '__main__':
         # define folder name to save results
         TARGET_DATA_FOLDER = SOURCE_DATA_FOLDER.replace("0_feature_set", "1_ML")
 
-        if settings.FLAG_ACUTE_MODE == 0:
-            condition_col = "days_after_treatment"
-            xlabel = "Days After Treatment"
-        else:
-            condition_col = "condition"
-            xlabel = settings.X_LABEL
-
         # do the machine learning
         models = settings.ML_MODELS
-        run_by_day(models,SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xlabel)
-        calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER, condition_col, xlabel)
+        run_by_day(models,SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)
+        calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER)

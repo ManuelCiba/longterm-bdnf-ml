@@ -98,7 +98,6 @@ def split_spiketrains_and_save_results(
         else:
             print("Already processed: " + full_path)
 
-
 def plot_spiketrains_and_save(bst, full_path):
 
     fig, ax = plt.subplots()  # Create a figure and axis object
@@ -155,10 +154,28 @@ if __name__ == '__main__':
         files = glob.glob(path_chip + '/*.mat')
         files = sorted(files)
 
+        if chip_name == 'A1_141-2641':
+            bla = 1
+
         # For all files in the folder
         for file in files:
             # Load the spike trains
             TS, AMP, t, fs, time, date = spiketrain_handler.read_dr_cell_file(file)
+            
+            # rename dummy files TODO remove if not needed anymore
+            if "20min" in file:
+                time = file[-16:-12] + '20'
+            elif "60min" in file:
+                time = file[-16:-12] + '60'
+
+            # rename dummy files TODO remove if not needed anymore
+            if "0020" in file:
+                time = file[-13:-9] + '20'
+                print("Changed time: " + file + " -> " + time)
+            elif "0060" in file:
+                time = file[-13:-9] + '60'
+                print("Changed time: " + file + " -> " + time)
+
             # convert dr_cell TS file to elephant spike train file
             spiketrains_elephant = spiketrain_handler.convert_to_elephant(TS, AMP, t_stop=t)
 

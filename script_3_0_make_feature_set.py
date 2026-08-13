@@ -33,7 +33,7 @@ def get_feature_set_df(source_path):
             label_y = 0
         else:
             print(f"Warning: {chip_folder} is not in the defined groups (DRUG or SHAM). Skipping this folder.")
-            continue
+            continue  # Skip this folder if it's not in the defined groups
 
         # Get all folder of the current path
         rec_folders = [entry for entry in os.listdir(chip_folder_path) if os.path.isdir(os.path.join(chip_folder_path, entry))]

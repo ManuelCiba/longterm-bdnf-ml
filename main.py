@@ -1,15 +1,9 @@
 # TODO:
-# For SHAP, mean over all windows for each chip? (currently each window is one data point in the shap plot)
-# if yes, use chip_train_list for this (already stored in the shap values pkl file)
+#
+# add feature: stationarity, autocorrelation, fano currently is related to that?
+# add feature: theta band (peak a ISI-distribution or IBI-distribution?)
 #
 # repeated cross validation for best model (currently only one run, which can be very random)
-#
-# after shap, shuffle features (permutation importance) to confirm the results
-#
-# add null-model test (= shuffle labels and check if AUC is around 0.5) to validate the pipeline
-#
-# drop one feature if |rho| > 0.95 -> stabilzes SHAP
-# or do the clustering before ML and use the mean over all features in the cluster
 #
 # !!! report std(SHAP) over folds !!!!
 
@@ -27,7 +21,8 @@
 # kill <PID>
 # or if it does not stop:   
 # kill -9 <PID>
-
+#
+# install new package: pip install <package> # CHECK IF (.venv) is active
 
 import os
 import warnings

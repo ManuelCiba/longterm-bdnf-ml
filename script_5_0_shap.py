@@ -143,7 +143,7 @@ def calculate_correlation_and_feature_groups(df_features):
     df_features = df_features.loc[:, df_features.nunique() > 1]
 
     # drop non-feature columns and calculate correlation matrix
-    corr = df_features.drop(columns=['y', 'chip', settings.condition_col]).corr(method='spearman')
+    corr = df_features.drop(columns=['y', 'chip', "x_tick_labels"]).corr(method='spearman')
 
     # cluster features based on correlation
     distance = 1 - np.abs(corr)
@@ -226,7 +226,7 @@ def _combine_shap_values_across_splits(shap_values_list):
 
     return median_shap_values, min_shap_values, max_shap_values
 
-def plot_all_shap_values(base_folder, model_name, feature_groups=None):
+def plot_all_shap_values(base_folder, model_name, feature_groups=None, max_display=10):
 
     # TODO Here mean over all windows? (currently each window is one data point in the shap plot)
     # if yes, use chip_train_list for this
@@ -248,10 +248,10 @@ def plot_all_shap_values(base_folder, model_name, feature_groups=None):
     else:
         output_path = os.path.join(base_folder, "SHAP_all_" + model_name + ".jpg")
     
-    _plot_shap_values(combined_shap, output_path)
-    _plot_shap_values(combined_shap, output_path.replace("jpg", "pdf"))
+    _plot_shap_values(combined_shap, output_path, max_display)
+    _plot_shap_values(combined_shap, output_path.replace("jpg", "pdf"), max_display)
 
-def _plot_shap_values(shap_values, output_path):
+def _plot_shap_values(shap_values, output_path, max_display=10):
     # Plot the SHAP values
     # Create subplots
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
@@ -260,9 +260,9 @@ def _plot_shap_values(shap_values, output_path):
 
     # if dimension is 3, it is a multiclass format
     if len(shap_values.shape) == 3:
-        shap.plots.beeswarm(shap_values[:, :, 1])  # only plot class1
+        shap.plots.beeswarm(shap_values[:, :, 1], max_display=max_display)  # only plot class1
     else:
-        shap.plots.beeswarm(shap_values)
+        shap.plots.beeswarm(shap_values, max_display=max_display)  # limit to top 20 features
 
 
     hd.save_figure(fig, output_path)
@@ -349,7 +349,7 @@ def _plot_combined_shap_dependence(shap_pkl_path, scaler, scaled_columns):
     X_train_sampled_list = data['X_train_sampled_list']
 
     # define which feature should be on the x axis
-    feature_name = settings.condition_col
+    feature_name = settings.X_LABEL
 
     # combine all shap values and X_train samples
     combined_shap = _combine_all_shap_values(shap_values_list, class_index=1)
@@ -451,7 +451,7 @@ def OLDcalculate_shap_values(base_folder, model_name, X_train_list, df_train_res
         #    _plot_shap_dependence(
         #        shap_values,
         #        X_train_sampled,
-        #        feature_name=settings.condition_col,
+        #        feature_name="x_tick_labels",
         #        output_path=output_path_dep,
         #        interaction_index=None
         #    )
@@ -556,7 +556,7 @@ def _inverse_transform_selected(X_train, scaler, scaled_columns):
     return X_rescaled
 
 # TODO
-def TODO_plot_shap_with_reference(combined_shap, combined_X, feature_name=settings.condition_col, class_index=1):
+def TODO_plot_shap_with_reference(combined_shap, combined_X, feature_name="x_tick_labels", class_index=1):
     """
     Plots a SHAP dependence plot for a feature with a horizontal reference line
     at the mean absolute SHAP value across all features, and a bar plot ranking
@@ -775,7 +775,7 @@ if __name__ == '__main__':
 
                     # plot shap all values
                     try:
-                        plot_all_shap_values(target_path, model, feature_groups)
+                        plot_all_shap_values(target_path, model, feature_groups, max_display=20)
                     except Exception as e:
                         print(e)
 

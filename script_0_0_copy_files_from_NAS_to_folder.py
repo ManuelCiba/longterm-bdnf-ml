@@ -38,12 +38,12 @@ if __name__ == "__main__":
     #source_nas_path = "/mnt/bmdata/08_Forschungsdaten/ESTRANGE_FKZ-02NUK081B/2025_WM_Mayer_Slices_hOLS_Axion_X-ray_C-ions"
     #source_nas_path = "/mnt/bmdata/08_Forschungsdaten/LSD_FKZ-TH1448_5-1/2024-09-03_M_Ismael-Lozano_rat-neurons_Axion_LSD/Long_Term_Exp"
     #source_nas_path =  "/mnt/bmdata/08_Forschungsdaten/LSD_FKZ-TH1448_5-1/2026-04-16_RCX_DMT/PSYNET_Cort"
-    source_nas_path =  "/mnt/bmdata/08_Forschungsdaten/LSD_FKZ-TH1448_5-1/2026-04-16_RCX_DMT/PSYNET_Cort"
+    source_nas_path =  "/mnt/bmdata/08_Forschungsdaten/LSD_FKZ-TH1448_5-1/2026-04-16_RCX_DMT/PSYNET_Cort/2026-06-23_Acute"
     
     #destination_local_path = "/home/mciba/Documents/2025-07_BDNF/data"  # or any local folder on university PC
     #destination_local_path = "/home/mciba/Documents/2025-10-ESTRANGE/data"  # or any local folder on university PC
     #destination_local_path = "/home/mciba/Documents/2025-07_BDNF/data/Ismael"  # or any local folder on university PC
-    #destination_local_path = "/home/mciba/Documents/2025-07_BDNF/data/DMT/Longterm_DIV8"
-    destination_local_path = "/home/mciba/Documents/2025-07_BDNF/data/DMT/Acute_DIV30"
+    destination_local_path = "/home/mciba/Documents/2025-07_BDNF/data/DMT/Acute_Hip_Cor"
+    #destination_local_path = "/home/mciba/Documents/2025-07_BDNF/data/DMT/Acute_DIV30"
 
     copy_spk_files(source_nas_path, destination_local_path)

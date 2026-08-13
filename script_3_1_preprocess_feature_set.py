@@ -27,28 +27,33 @@ def preprocess_df_features_align_files(df_features):
 
     # get labels for the x-ticks
     labels = settings.X_TICK_LABELS
+    ticks = settings.X_TICKS
     
     # assign condition labels to each row. This only works if df_features is sorted!
-    conditions = []
-    condition_idx = 0
+    x_tick_labels = []
+    x_tick_labels_idx = 0
+    x_ticks = []
+    x_ticks_idx = 0
     for i, filename in enumerate(df_features['file']):
         # Advance to the next timepoint whenever a new window00 starts
         if i > 0 and filename == 'window00.csv':
-            condition_idx += 1
+            x_tick_labels_idx += 1
+            x_ticks_idx += 1
 
-        conditions.append(labels[condition_idx % len(labels)])
+        x_tick_labels.append(labels[x_tick_labels_idx % len(labels)])
+        x_ticks.append(ticks[x_ticks_idx % len(ticks)])
     
-    df_features['condition'] = conditions
-
-    n_per_x = (df_features.groupby("condition").size().reset_index(name="n_recordings"))
+    df_features["x_ticks"] = x_ticks
+    df_features["x_tick_labels"] = x_tick_labels
+    n_per_x = (df_features.groupby("x_ticks").size().reset_index(name="n_recordings"))
 
     if settings.FLAG_RELATIVE:
-        metadata_cols = ["chip", "condition", "y", "file", "recording", "group"]
+        metadata_cols = settings.METADATA_COLS
         feature_cols = [c for c in df_features.columns if c not in metadata_cols]
         df_features_norm = df_features.copy()
 
         baseline_means = (
-            df_features[df_features["condition"] == "0"]
+            df_features[df_features["x_ticks"] == settings.RELATIVE_BASELINE_X_TICK]
             .groupby("chip")[feature_cols]
             .mean()
         )
@@ -74,21 +79,52 @@ def preprocess_df_features_align_timestamps(df_features):
     # Ensure the 'recording' column is in datetime format
     df_features['recording'] = pd.to_datetime(df_features['recording'], format="%Y%m%d_%H%M%S")
 
-    # (re)calculate the days after treatment for each recording (relative to the DRUG treatment finish date)
-    #df_features["days_after_treatment"] = (
-    #    df_features["recording"].dt.normalize()
-    #    - DATE_TIME_DRUG_TREATMENT_FINISHED.normalize()).dt.days
-
+    # calculate the days after treatment for each recording (relative to the DRUG treatment finish date)
     df_features["hours_after_washout"] = (
         df_features["recording"] - DATE_TIME_DRUG_TREATMENT_FINISHED).dt.total_seconds() / 3600
 
-    df_features["days_after_treatment"] = np.floor(df_features["hours_after_washout"] / 24).astype(int)
-    df_features = df_features.drop(columns=['hours_after_washout'])  # drop the intermediate column
+    
+    #df_features["x_tick_labels"] = (
+    #    df_features[settings.X] * settings.TIME_WINDOW_HOURS
+    #).astype(str) + "-" + (
+    #    (df_features[settings.X] + 1) * settings.TIME_WINDOW_HOURS
+    #).astype(str) 
+    df_features["x_tick_labels"] = np.floor(df_features["hours_after_washout"] / settings.TIME_WINDOW_HOURS).astype(int)
+    # TODO Change x_ticks to be from 0 ... n
+    df_features["x_ticks"] = np.floor(df_features["hours_after_washout"] / settings.TIME_WINDOW_HOURS).astype(int)
+        
 
-    # If the baseline correction is needed, set to True
+    df_features = df_features.drop(columns=['hours_after_washout'])  # drop the intermediate column
+    
+
+    if settings.FLAG_RELATIVE:
+        df_features = _normalize_features(df_features)
+
+    if False:  # OLD normalization code
+        DATE_TIME_NORMALIZATION = pd.to_datetime(settings.DATE_TIME_NORMALIZATION, format="%Y%m%d_%H%M%S")
+            
+        metadata_cols = settings.METADATA_COLS
+        feature_cols = [c for c in df_features.columns if c not in metadata_cols]
+        df_features_norm = df_features.copy()
+
+        baseline_means = (
+            df_features[df_features["recording"] == DATE_TIME_NORMALIZATION]
+            .groupby("chip")[feature_cols]
+            .mean()
+        )
+
+        for chip, baseline in baseline_means.iterrows():
+            mask = df_features_norm["chip"] == chip
+            df_features_norm.loc[mask, feature_cols] = (
+                df_features_norm.loc[mask, feature_cols] / baseline
+            )
+
+        df_features = df_features_norm
+
+    # OLD normalization code
     if False:
         # drop the daytime column and insert later again after the calculation
-        days_after_treatment = df_features.pop('days_after_treatment')
+        days_after_treatment = df_features.pop(settings.X)
 
         # Filter rows before DRUG application
         baseline_rows = df_features[df_features['recording'] < DATE_TIME_DRUG_TREATMENT_STARTED]
@@ -109,7 +145,7 @@ def preprocess_df_features_align_timestamps(df_features):
     #df_features = df_features[df_features['recording'] >= DATE_TIME_DRUG_TREATMENT_FINISHED]
 
     # get n per day
-    n_per_day = (df_features.groupby("days_after_treatment").size().reset_index(name="n_recordings"))
+    n_per_x = (df_features.groupby("x_ticks").size().reset_index(name="n_recordings"))
 
     # remove excluded days
     if settings.DATE_TIME_LAST_RECORDING != "":
@@ -117,7 +153,67 @@ def preprocess_df_features_align_timestamps(df_features):
         df_features = _remove_excluded_days(df_features)
 
     
-    return df_features, n_per_day
+    return df_features, n_per_x
+
+def _normalize_features(df_features):
+    normalization_time = settings.DATE_TIME_NORMALIZATION
+
+    metadata_cols = settings.METADATA_COLS
+    feature_cols = [c for c in df_features.columns if c not in metadata_cols]
+
+    df_features_norm = df_features.copy()
+
+    # Ensure recording column is datetime
+    df_features["recording"] = pd.to_datetime(
+        df_features["recording"],
+        format="%Y%m%d_%H%M%S"
+    )
+
+    # Support either YYYYMMDD or YYYYMMDD_HHMMSS
+    if len(normalization_time) == 8:
+        # Use all recordings from that day
+        normalization_date = pd.to_datetime(
+            normalization_time,
+            format="%Y%m%d"
+        ).date()
+
+        baseline_mask = (
+            df_features["recording"].dt.date == normalization_date
+        )
+
+    else:
+        # Use exact recording timestamp
+        normalization_datetime = pd.to_datetime(
+            normalization_time,
+            format="%Y%m%d_%H%M%S"
+        )
+
+        baseline_mask = (
+            df_features["recording"] == normalization_datetime
+        )
+
+    baseline_means = (
+        df_features.loc[baseline_mask]
+        .groupby("chip")[feature_cols]
+        .mean()
+    )
+
+    if baseline_means.empty:
+        raise ValueError(
+            f"No recordings found for normalization time '{normalization_time}'"
+        )
+
+    for chip, baseline in baseline_means.iterrows():
+        mask = df_features_norm["chip"] == chip
+
+        df_features_norm.loc[mask, feature_cols] = (
+            df_features_norm.loc[mask, feature_cols]
+            .div(baseline)
+        )
+
+    df_features = df_features_norm
+
+    return df_features
 
 # currently not used, but can be used to only use acute data for machine learning
 def preprocess_df_features_acute(df_features):
@@ -132,7 +228,7 @@ def preprocess_df_features_acute(df_features):
     df_features['recording'] = pd.to_datetime(df_features['recording'], format="%Y%m%d_%H%M%S")
 
     # drop the daytime column and insert later again after the calculation
-    days_after_treatment = df_features.pop('days_after_treatment')
+    days_after_treatment = df_features.pop("x_ticks")
 
     # Filter rows before DRUG application
     baseline_rows = df_features[df_features['recording'] < DATE_TIME_DRUG_TREATMENT_STARTED]

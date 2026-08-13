@@ -63,6 +63,28 @@ def _calculate_curve_features(df_curve):
     max_value_bin = x[np.argmax(y)]
     median_value = np.median(y)
 
+    # get FWHM (full width of half maximum) of the curve
+    half_max = 0.5 * max_value
+    crossings = np.where(np.diff(y >= half_max))[0]
+    if len(crossings) == 0:
+        # If no crossings are found, assume the curve with is the entire range of x
+        x_max = x[0]  
+        x_min = x[-1]
+    elif len(crossings) == 1:
+        x_cross = x[crossings[0]]
+        if x_cross < x[np.argmax(y)]:
+            # if x_n......x_cross......x(y_max)....x_0 then width = x_0 - x_cross 
+            x_max = x[0]
+            x_min = x_cross
+        else:
+            # if x_n......x(y_max)......x_cross....x_0 then width = x_cross - x_n
+            x_max = x_cross
+            x_min = x[-1]
+    else:
+        x_max = x[crossings[0]]
+        x_min = x[crossings[-1]]
+    fwhm = np.log10(x_max/x_min) if x_min > 0 else np.nan  # Avoid log(0) error
+
     # get synchrony for different time scales
     timescales = np.array([100, 10, 1, 0.1, 0.01])   # in seconds
     # Find the indices of the closest values
@@ -82,6 +104,7 @@ def _calculate_curve_features(df_curve):
         's_max': [max_value],
         's_max_bin': [max_value_bin],
         's_median': [median_value],
+        's_fwhm': [fwhm],
         's_100': [synchrony_values[0]],
         's_10': [synchrony_values[1]],
         's_1': [synchrony_values[2]],

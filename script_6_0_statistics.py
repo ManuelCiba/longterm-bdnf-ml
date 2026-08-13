@@ -21,18 +21,18 @@ import patsy
 correction_method = "p" # "p": no correction, "p_fdr": fdr correction, "p_bonf": bonferroni correction
 
 
-def preprocess_and_plot(df, condition_col, xlabel, target_path):
+def preprocess_and_plot(df, target_path):
     """
     Preprocess the data and create violin plots with statistical significance testing.
     Args:
         df (pd.DataFrame): Input DataFrame containing the features and metadata.
     """
     # Identify feature columns (exclude non-feature columns)
-    non_feature_cols = ["chip", "y", "group", condition_col, "file", "recording"]
+    non_feature_cols = settings.METADATA_COLS
     feature_cols = [col for col in df.columns if col not in non_feature_cols]
     
-    # Group by 'chip', 'group', and 'condition_col', calculate the mean
-    df_mean = df.groupby(["chip", "group", condition_col], as_index=False)[feature_cols].mean()
+    # Group by 'chip', 'group', and '"x_ticks"', calculate the mean
+    df_mean = df.groupby(["chip", "group", "x_ticks"], as_index=False)[feature_cols].mean()
 
     # simple mann whitney u test
     if 1:
@@ -40,9 +40,9 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
         for feature in feature_cols:
 
             # Perform statistical testing
-            for day in df_mean[condition_col].unique():
-                drug_vals = df_mean[(df_mean[condition_col] == day) & (df_mean["group"] == "DRUG")][feature]
-                sham_vals = df_mean[(df_mean[condition_col] == day) & (df_mean["group"] == "SHAM")][feature]
+            for day in df_mean["x_ticks"].unique():
+                drug_vals = df_mean[(df_mean["x_ticks"] == day) & (df_mean["group"] == "DRUG")][feature]
+                sham_vals = df_mean[(df_mean["x_ticks"] == day) & (df_mean["group"] == "SHAM")][feature]
                 
                 drug_vals = drug_vals.dropna()
                 sham_vals = sham_vals.dropna()
@@ -94,7 +94,7 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
         palette = "rocket" #"magma" #"viridis"
         if 0:
             ax = sns.boxplot(
-                x="condition_col", y=feature, hue="group", 
+                x="x_ticks", y=feature, hue="group", 
                 data=df_mean, 
                 palette=palette,
                 flierprops=dict(marker='.', markersize=4, linestyle='none', markerfacecolor='gray', alpha=0.7),  # small dot outliers
@@ -107,7 +107,7 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
         # --- Clean violin without that tiny embedded box ---
         if 1:
             ax = sns.violinplot(
-                x=condition_col,
+                x="x_ticks",
                 y=feature,
                 hue="group",
                 hue_order=group_order,
@@ -122,7 +122,7 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
 
         # --- Add proper full-size boxplots on top of the violin ---
         #sns.boxplot(
-        #    x="condition_col",
+        #    x="x_ticks",
         #    y=feature,
         #    hue="group",
         #    data=df_mean,
@@ -141,7 +141,7 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
         # --- Add raw data points (jittered) ---
         if 1:
             sns.stripplot(
-                x=condition_col,
+                x="x_ticks",
                 y=feature,
                 hue="group",
                 hue_order=group_order,
@@ -157,11 +157,24 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
                 legend=False
             )
 
-        # Increase font sizes
-        plt.xlabel(xlabel, fontsize=16)
-        plt.ylabel(feature, fontsize=16)
-        plt.title(f"{feature} by Group Over Time", fontsize=18)
-        plt.xticks(fontsize=14)#, rotation=90)
+        # get the unique x_tick_labels
+        tick_df = (
+            df[["x_ticks", "x_tick_labels"]]
+            .drop_duplicates()
+            .sort_values("x_ticks")
+        )
+
+        # Labels & styling
+        ax.set_title(f"{feature} by Group Over Time", fontsize=18)
+        ax.set_xticks(range(len(tick_df)))
+        #ax.set_xticklabels(
+        #    tick_df["x_tick_labels"],
+        #    rotation=90,
+        #    fontsize=14
+        #)
+        ax.set_xticklabels(settings.X_TICK_LABELS, rotation=90, fontsize=14)
+        ax.set_xlabel(settings.X_LABEL, fontsize=16)
+        ax.set_ylabel(feature, fontsize=16)
         plt.yticks(fontsize=14)
         plt.legend(fontsize=14, title_fontsize=15)
 
@@ -178,7 +191,7 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
             # ------------------------------------------------------------
             # Add n-labels per box (SHAM and DRUG for each day)
             # ------------------------------------------------------------
-            days = sorted(df_mean['condition_col'].unique())
+            days = sorted(df_mean['"x_ticks"'].unique())
             groups = df_mean['group'].unique().tolist()  # e.g., ['SHAM','DRUG']
             num_groups = len(groups)
 
@@ -194,7 +207,7 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
 
                 # Count n
                 n = df_mean[
-                    (df_mean[condition_col] == day) &
+                    (df_mean["x_ticks"] == day) &
                     (df_mean["group"] == group)
                 ].shape[0]
 
@@ -222,7 +235,7 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
         if 0:
             # Add vertical lines to indicate integer day changes
             # Get sorted unique x positions
-            x_values = sorted(df_mean['condition_col'].unique())
+            x_values = sorted(df_mean['"x_ticks"'].unique())
             # Loop through and check where integer day changes
             for i in range(1, len(x_values)):
                 if int(x_values[i]) != int(x_values[i-1]):
@@ -230,7 +243,7 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
 
 
         # Add significance stars
-        _add_significance_stars_grouped(p_values, df_mean, condition_col, feature)
+        _add_significance_stars_grouped(p_values, df_mean, "x_ticks", feature)
 
         # Save the plot
         plt.tight_layout()
@@ -239,13 +252,13 @@ def preprocess_and_plot(df, condition_col, xlabel, target_path):
         hd.save_figure(plt.gcf(), full_target_path)
         print(f"Saved feature set to {full_target_path}")
 
-def plot_lineplot(df, condition_col, xlabel, target_path):   
+def plot_lineplot(df, target_path):   
     # Identify feature columns (exclude non-feature columns)
-    non_feature_cols = ["chip", "y", "group", condition_col, "file", "recording"]
+    non_feature_cols = settings.METADATA_COLS
     feature_cols = [col for col in df.columns if col not in non_feature_cols]
     
-    # Group by 'chip', 'group', and 'condition_col', calculate the mean
-    df_mean = df.groupby(["chip", condition_col], as_index=False)[feature_cols].mean()
+    # Group by 'chip', 'group', and '"x_ticks"', calculate the mean
+    df_mean = df.groupby(["chip", "x_ticks"], as_index=False)[feature_cols].mean()
 
     # plot results
     for feature in feature_cols:
@@ -257,7 +270,7 @@ def plot_lineplot(df, condition_col, xlabel, target_path):
 
         ax = sns.lineplot(
             data=df_mean,
-            x=condition_col,
+            x="x_ticks",
             y=feature,
             hue="chip",
             style="chip",        # marker style per chip
@@ -265,11 +278,25 @@ def plot_lineplot(df, condition_col, xlabel, target_path):
             dashes=False,        # keep lines solid
         )
 
-        # Increase font sizes
-        plt.xlabel(xlabel, fontsize=16)
-        plt.ylabel(feature, fontsize=16)
-        plt.title(f"{feature} by Group Over Time", fontsize=18)
-        plt.xticks(fontsize=14)#, rotation=90)
+        # get the unique x_tick_labels
+        tick_df = (
+            df[["x_ticks", "x_tick_labels"]]
+            .drop_duplicates()
+            .sort_values("x_ticks")
+        )
+
+        # Labels & styling
+        ax.set_title(f"{feature} by Group Over Time", fontsize=18)
+        ax.set_xticks(tick_df["x_ticks"].values)
+        ax.set_xticklabels(settings.X_TICK_LABELS, rotation=90, fontsize=14)
+        #ax.set_xticklabels(
+        #    tick_df["x_tick_labels"].values,
+        #    rotation=90,
+        #    fontsize=14
+        #)
+
+        ax.set_xlabel(settings.X_LABEL, fontsize=16)
+        ax.set_ylabel(feature, fontsize=16)
         plt.yticks(fontsize=14)
         plt.legend(fontsize=14, title_fontsize=15)
 
@@ -286,7 +313,7 @@ def lmm_daywise_group_pvalues(df_mean, feature, subject_col="chip"):
     """
 
     data = df_mean.copy().reset_index(drop=True)
-    data["day_f"] = data["condition_col"].astype("category")
+    data["day_f"] = data["x_ticks"].astype("category")
 
     # Quote the feature name safely
     formula = f"Q('{feature}') ~ C(group) * C(day_f)"
@@ -340,6 +367,10 @@ def lmm_daywise_group_pvalues(df_mean, feature, subject_col="chip"):
     return pd.DataFrame(rows)
 
 def p_to_stars(p):
+
+    if np.isnan(p):
+        return "NaN"
+
     if p <= 0.00001:
         return "*****"
     if p <= 0.0001:
@@ -436,19 +467,12 @@ if __name__ == '__main__':
             full_source_path = os.path.join(source_path, 'feature_set_preprocessed.csv')
             df = hd.load_csv_as_df(full_source_path)
 
-            # Drop rows where condition_col < 0
-            #df = df.loc[df["condition_col"] >= 0].reset_index(drop=True)
+            # Drop rows where "x_ticks" < 0
+            #df = df.loc[df[""x_ticks""] >= 0].reset_index(drop=True)
 
-            if settings.FLAG_ACUTE_MODE == 0:
-                condition_col = "days_after_treatment"
-                xlabel = "Days After Treatment"
-            else:
-                condition_col = "condition"
-                xlabel = settings.X_LABEL
-
-
-            plot_lineplot(df, condition_col, xlabel, target_path + "/lineplots")
-            preprocess_and_plot(df, condition_col, xlabel, target_path + "/violinplots")
+            
+            preprocess_and_plot(df, target_path + "/violinplots")
+            plot_lineplot(df, target_path + "/lineplots")
             
 
     print("Script finished: script_6_0_statistics.py")

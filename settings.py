@@ -1,12 +1,14 @@
 import os
 import quantities as pq
 
-FLAG_DATA_DMT_DIV30_ACUTE = 1
-FLAG_DATA_DMT_DIV8_LONGTERM = 0
-FLAG_DATA_DMT_DIV8_ACUTE = 0
-FLAG_DATA_LSD_ISMAEL = 0   # Set to True if you want to use Ismael's data
-FLAG_DATA_LSD_WENUS = 0    # Set to True if you want to use WENUS data
-FLAG_DATA_BDNF = 0    # Set to True if you want to use BDNF data
+FLAG_DATA_DMT_HIPCOR_HIP = 0
+FLAG_DATA_DMT_HIPCOR_COR = 0 # Cultures from ESTRANGE (radiated), hip and cor, dose response
+FLAG_DATA_DMT_DIV30_ACUTE = 1 # Same cells from first DMT experiment
+FLAG_DATA_DMT_DIV8_LONGTERM = 0 # First DMT experiment
+FLAG_DATA_DMT_DIV8_ACUTE = 0 # First DMT experiment
+FLAG_DATA_LSD_ISMAEL = 0   # data from Ismael Lozano Flores, LSD 10uM longterm
+FLAG_DATA_LSD_WENUS = 0    # data from WENUS NAFEZ, LSD 10uM longterm
+FLAG_DATA_BDNF = 0    # BDNF data post washout, 50ng/ml, 8 div, 72h, 3 plates, 3 wells per plate
 
 FLAG_ESTRANGE_DATA1_CION = 0
 FLAG_ESTRANGE_DATA1_XRAY = 0
@@ -15,18 +17,96 @@ FLAG_ESTRANGE_DATA2_TC_XRAY = 0 # Tumor cells + XRAY vs Sham
 FLAG_ESTRANGE_DATA2_TC = 0  # Tumor cells only vs Sham (it uses data from DATA2_XRAY as sham and DATA2_TC_XRAY as "drug")
 
 FLAG_ACUTE_MODE = 0 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-condition_col = "days_after_treatment" # column name in the feature set dataframe that contains the condition (e.g. days after treatment or drug concentration)
-# TODO: rename to x
+
+if FLAG_DATA_DMT_HIPCOR_HIP:
+    # Acute mode settings
+    FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
+    FLAG_RELATIVE = 1 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    RELATIVE_BASELINE_X_TICK = 0
+    X_TICKS = [0, 1, 2, 3, 4, 5, 6] 
+    X_TICK_LABELS = ["30 (20min)", "30 (1h)", "90 (20min)", "90 (1h)", "150 (20min)", "150 (1h)", "150 (24h)"] 
+    X_LABEL = "DMT in µM"
+
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/DMT/20260623/Acute_Hip_Cor/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "DMT_DIV64_HipCor_Hip")
+    if FLAG_RELATIVE:
+        PATH_RESULTS_FOLDER += "_relative"
+
+    # hip:
+    # Plate1: 132-1844 (DMT: A3)
+    # Plate2: 141-2641 (DMSO: A1, A3)*
+    # Plate3: 132-1848 (DMSO: A2, A3)
+    # Plate4: 141-2618 (DMT: A1, A2, A3)*
+    # * radiated from ESTRANGE project
+
+    # cor
+    # Plate1: 132-1844 (DMT: B1, B2, B3)
+    # Plate2: 141-2641 
+    # Plate3: 132-1848 (DMSO: B1, B2, B3)
+    # Plate4: 141-2618 
+    # * radiated from ESTRANGE project
+
+    WELLS_SHAM = ['A1_141-2641', 'A3_141-2641', 'A2_132-1848', 'A3_132-1848']
+    WELLS_DRUG = ['A3_132-1844', 'A1_141-2618', 'A2_141-2618', 'A3_141-2618']
+    
+    DATE_TIME_DRUG_TREATMENT_STARTED = ""  # ?
+    DATE_TIME_DRUG_TREATMENT_FINISHED = ""  # ?
+    DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    LABEL_SHAM = "DMSO (hip)"
+    LABEL_DRUG = "DMT (hip)"
+
+if FLAG_DATA_DMT_HIPCOR_COR:
+    # Acute mode settings
+    FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
+    FLAG_RELATIVE = 1 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    RELATIVE_BASELINE_X_TICK = 0
+    X_TICKS = [0, 1, 2, 3, 4, 5, 6] 
+    X_TICK_LABELS = ["30 (20min)", "30 (1h)", "90 (20min)", "90 (1h)", "150 (20min)", "150 (1h)", "150 (24h)"] 
+    X_LABEL = "DMT in µM"
+
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/DMT/20260623/Acute_Hip_Cor/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "DMT_DIV64_HipCor_Cor")
+    if FLAG_RELATIVE:
+        PATH_RESULTS_FOLDER += "_relative"
+
+    # hip:
+    # Plate1: 132-1844 (DMT: A3)
+    # Plate2: 141-2641 (DMSO: A1, A3)*
+    # Plate3: 132-1848 (DMSO: A2, A3)
+    # Plate4: 141-2618 (DMT: A1, A2, A3)*
+    # * radiated from ESTRANGE project
+
+    # cor
+    # Plate1: 132-1844 (DMT: B1, B2, B3)
+    # Plate2: 141-2641 
+    # Plate3: 132-1848 (DMSO: B1, B2, B3)
+    # Plate4: 141-2618 
+    # * radiated from ESTRANGE project
+
+    WELLS_SHAM = ['B1_132-1848', 'B2_132-1848', 'B3_132-1848']
+    WELLS_DRUG = ['B1_132-1844', 'B2_132-1844', 'B3_132-1844']
+    
+    DATE_TIME_DRUG_TREATMENT_STARTED = ""  # ?
+    DATE_TIME_DRUG_TREATMENT_FINISHED = ""  # ?
+    DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    LABEL_SHAM = "DMSO (cor)"
+    LABEL_DRUG = "DMT (cor)"
 
 if FLAG_DATA_DMT_DIV30_ACUTE:
 
     # Acute mode settings
     FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    FLAG_RELATIVE = 1 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    RELATIVE_BASELINE_X_TICK = 0
     X_TICKS = [0, 1, 2, 3] 
     X_TICK_LABELS = ["0", "90 (20min)", "90 (90min)", "0 (24h)"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
     X_LABEL = "DMT in µM"
-    condition_col = "condition" # TODO rename to x (same for acute and long-term data)
 
     # KAI path to the data (server)
     PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/DMT/20260424/Acute_DIV30/TS/"
@@ -52,42 +132,63 @@ if FLAG_DATA_DMT_DIV30_ACUTE:
     LABEL_DRUG = "DMT"
 
 if FLAG_DATA_DMT_DIV8_LONGTERM:
+
+    FLAG_RELATIVE = 1
+    TIME_WINDOW_HOURS = 24 # for calculating the time after treatment (24h = days after treatment)
+    X = "Time after treatment" # Column name for X-axis
+    X_LABEL = "Time after DMT application in days"
+
+
     # KAI path to the data (server)
     PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/DMT/20260424/Longterm_DIV8/TS/"
 
     # Path where results will be saved
     PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "DMT_DIV8_LONGTERM")
+    PATH_RESULTS_FOLDER += "_" + str(TIME_WINDOW_HOURS) + "h"
+    if FLAG_RELATIVE:
+        PATH_RESULTS_FOLDER += "_relative"
+
 
     WELLS_SHAM = ['A1_132-1807', 'A1_141-2608', 'A1_141-2511', 'A1_141-2532',
                  'A2_132-1807', 'A2_141-2608', 'A2_141-2511', 'A2_141-2532',
                  'A3_132-1807', 'A3_141-2608', 'A3_141-2511', 'A3_141-2532']
     WELLS_DRUG = ['B1_132-1807', 'B1_141-2608', 'B1_141-2511', 'B1_141-2532',
                   'B2_132-1807', 'B2_141-2608', 'B2_141-2511', 'B2_141-2532',
-                  'B3_132-1807', 'B3_141-2608', 'B3_141-2511', 'B3_141-2532',]
+                  'B3_132-1807', 'B3_141-2608', 'B3_141-2511', 'B3_141-2532']
     
-    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_160000"  # ?
-    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_160000"  # ?
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_000000"  # ? "20260424_160000"
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_000000"  # ? "20260427_160000"
     DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    DATE_TIME_NORMALIZATION = "20260428" 
     LABEL_SHAM = "Sham"
     LABEL_DRUG = "DMT"
 
 if FLAG_DATA_DMT_DIV8_ACUTE:
+
+    FLAG_RELATIVE = 1
+    TIME_WINDOW_HOURS = 1 # for calculating the time after treatment (24h = days after treatment)
+    X = "Time after treatment" # Column name for X-axis
+    X_LABEL = "Time after DMT application in hours"
+
     # KAI path to the data (server)
     PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/DMT/20260424/Acute_DIV8/TS/"
 
     # Path where results will be saved
     PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "DMT_DIV8_ACUTE")
+    PATH_RESULTS_FOLDER += "_" + str(TIME_WINDOW_HOURS) + "h"
+    if FLAG_RELATIVE:
+        PATH_RESULTS_FOLDER += "_relative"
 
     # Plate2: 141-2608
     WELLS_SHAM = ['A1_141-2608','A2_141-2608','A3_141-2608']
     WELLS_DRUG = ['B1_141-2608','B2_141-2608','B3_141-2608']
     
-    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_160000"  # ?
-    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_160000"  # ?
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_162000" 
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260424_162000" # set same as started since I want the drug treatment start to be my t=0  #"20260427_160000"
     DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    DATE_TIME_NORMALIZATION = "20260428_112500" # only effective if FLAG_RELATIVE = 1
     LABEL_SHAM = "Ctrl"
     LABEL_DRUG = "DMT"
-
 
 if FLAG_DATA_LSD_ISMAEL:
     # local path to the data (laptop)
@@ -253,6 +354,10 @@ if FLAG_ESTRANGE_DATA2_TC:
     LABEL_SHAM = "Ctrl"
     LABEL_DRUG = "TC"
 
+
+# Global variables for easier code maintenance
+METADATA_COLS = ["chip", "y", "group", "x_ticks", "file", "recording", "x_tick_labels"]
+NOT_NEEDED_FOR_ML_COLS = ["group", "file", "recording", "x_ticks"]
 
 # Flags to control the analysis
 FLAG_PLOT = False
