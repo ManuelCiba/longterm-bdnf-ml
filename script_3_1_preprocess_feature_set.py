@@ -15,19 +15,16 @@ def preprocess_df_features_align_files(df_features):
     
     # get number of x-ticks (e.g. condition1: 0µM, condition2: 20µM ect.)
     n_ticks = len(settings.X_TICKS)
-    
-    # get number of windows per file (a recording of a sample was split into multiple time windows)
-    n_windows = (
-        df_features['file']
-        .str.extract(r'window(\d+)\.csv')[0]
-        .astype(int)
-        .max()
-        + 1
-    )
 
     # get labels for the x-ticks
     labels = settings.X_TICK_LABELS
     ticks = settings.X_TICKS
+
+    # Keep only the recordings specified in ticks for each chip. 
+    # recording is in YYYYMMDD_HHMMSS format, so the existing sort order is chronological. 
+    recording_idx = ( df_features[["chip", "recording"]] .drop_duplicates() .groupby("chip") .cumcount() ) 
+    recordings_to_keep = ( df_features[["chip", "recording"]] .drop_duplicates() .loc[recording_idx.isin(ticks)] ) 
+    df_features = df_features.merge( recordings_to_keep, on=["chip", "recording"], how="inner" )
     
     # assign condition labels to each row. This only works if df_features is sorted!
     x_tick_labels = []

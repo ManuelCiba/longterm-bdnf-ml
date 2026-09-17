@@ -41,8 +41,8 @@ if __name__ == '__main__':
         exec(open(os.path.join(os.getcwd(), "script_2_5_calc_connectivity.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_2_6_calc_complex_network.py")).read())
     
-    if 0:    
-        exec(open(os.path.join(os.getcwd(), "script_3_0_make_feature_set.py")).read())
+    if 1:    
+        #exec(open(os.path.join(os.getcwd(), "script_3_0_make_feature_set.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_3_1_preprocess_feature_set.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_6_0_statistics.py")).read())
     

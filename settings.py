@@ -1,12 +1,17 @@
 import os
 import quantities as pq
 
+FLAG_DATA_PSY1_LSD = 0
+FLAG_DATA_PSY1_DMT = 0
+FLAG_DATA_PSY1_BDNF = 1 # LSD, DMT, BDNF
+FLAG_DATA_PSY1_DMT_24h = 0
+
 FLAG_DATA_DMT_HIPCOR_HIP = 0
 FLAG_DATA_DMT_HIPCOR_COR = 0 # Cultures from ESTRANGE (radiated), hip and cor, dose response
-FLAG_DATA_DMT_DIV30_ACUTE = 1 # Same cells from first DMT experiment
+FLAG_DATA_DMT_DIV30_ACUTE = 0 # Same cells from first DMT experiment
 FLAG_DATA_DMT_DIV8_LONGTERM = 0 # First DMT experiment
 FLAG_DATA_DMT_DIV8_ACUTE = 0 # First DMT experiment
-FLAG_DATA_LSD_ISMAEL = 0   # data from Ismael Lozano Flores, LSD 10uM longterm
+FLAG_DATA_LSD_ISMAEL = 0   # data frsom Ismael Lozano Flores, LSD 10uM longterm
 FLAG_DATA_LSD_WENUS = 0    # data from WENUS NAFEZ, LSD 10uM longterm
 FLAG_DATA_BDNF = 0    # BDNF data post washout, 50ng/ml, 8 div, 72h, 3 plates, 3 wells per plate
 
@@ -17,6 +22,271 @@ FLAG_ESTRANGE_DATA2_TC_XRAY = 0 # Tumor cells + XRAY vs Sham
 FLAG_ESTRANGE_DATA2_TC = 0  # Tumor cells only vs Sham (it uses data from DATA2_XRAY as sham and DATA2_TC_XRAY as "drug")
 
 FLAG_ACUTE_MODE = 0 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
+
+if FLAG_DATA_PSY1_DMT_24h:
+
+    FLAG_RELATIVE = 1
+    TIME_WINDOW_HOURS = 1 # for calculating the time after treatment (24h = days after treatment)
+    X = "Time after treatment" # Column name for X-axis
+    X_LABEL = "Time after DMT application in hours"
+
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/PsyNet/2026-08-26_DMT_24h/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "PsyNet_20260820_DMT_24h")
+    PATH_RESULTS_FOLDER += "_" + str(TIME_WINDOW_HOURS) + "h"
+    if FLAG_RELATIVE:
+        PATH_RESULTS_FOLDER += "_relative"
+
+
+    WELLS_SHAM = ['A1_132-1807', 'A1_141-2608', 'A1_141-2511', 'A1_141-2532',
+                 'A2_132-1807', 'A2_141-2608', 'A2_141-2511', 'A2_141-2532',
+                 'A3_132-1807', 'A3_141-2608', 'A3_141-2511', 'A3_141-2532']
+    WELLS_DRUG = ['B1_132-1807', 'B1_141-2608', 'B1_141-2511', 'B1_141-2532',
+                  'B2_132-1807', 'B2_141-2608', 'B2_141-2511', 'B2_141-2532',
+                  'B3_132-1807', 'B3_141-2608', 'B3_141-2511', 'B3_141-2532']
+    
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_000000"  # ? "20260424_160000"
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_000000"  # ? "20260427_160000"
+    DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    DATE_TIME_NORMALIZATION = "20260428" 
+    LABEL_SHAM = "Sham"
+    LABEL_DRUG = "DMT"
+
+if FLAG_DATA_PSY1_LSD:
+    # Day of plating: 22.07.2026
+    # Application of BDNF: 15 div, 50 ng/ml (dissolved in water) for 24h
+    # Acute mode settings
+    FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
+    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    RELATIVE_BASELINE_X_TICK = 0
+    X_TICKS = [0, 1, 2, 3, 4] 
+    X_TICK_LABELS = ["0 (MC)", "20min", "1h", "2h", "24h"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
+    X_LABEL = "Time after Treatment"
+
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/PsyNet/2026-08-05/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "PsyNet_20260805_LSD")
+    if FLAG_RELATIVE:
+        PATH_RESULTS_FOLDER += "_relative"
+
+    # RCx01: 141-2532: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx02: 141-2511: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF
+    # RCx03: 141-2608: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx04: 147-8942: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF
+    # RCx05: 147-8943: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx06: 147-8921: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF
+    # RCx07: 147-8902: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx08: 147-8952: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF 
+    WELLS_DMSO = [
+        'A1_141-2532', 'B2_141-2532',
+        'A3_141-2511',
+        'A1_141-2608', 'B2_141-2608',
+        'A3_147-8942',
+        'A1_147-8943', 'B2_147-8943',
+        'A3_147-8921',
+        'A1_147-8902', 'B2_147-8902',
+        'A3_147-8952'
+    ]
+    WELLS_DMT = [
+        'A2_141-2532', 'B3_141-2532',
+        'B1_141-2511',
+        'A2_141-2608', 'B3_141-2608',
+        'B1_147-8942',
+        'A2_147-8943', 'B3_147-8943',
+        'B1_147-8921',
+        'A2_147-8902', 'B3_147-8902',
+        'B1_147-8952'
+    ]
+    WELLS_LSD = [
+        'A3_141-2532',
+        'A1_141-2511', 'B2_141-2511',
+        'A3_141-2608',
+        'A1_147-8942', 'B2_147-8942',
+        'A3_147-8943',
+        'A1_147-8921', 'B2_147-8921',
+        'A3_147-8902',
+        'A1_147-8952', 'B2_147-8952'
+    ]
+    WELLS_BDNF = [
+        'B1_141-2532',
+        'A2_141-2511', 'B3_141-2511',
+        'B1_141-2608',
+        'A2_147-8942', 'B3_147-8942',
+        'B1_147-8943',
+        'A2_147-8921', 'B3_147-8921',
+        'B1_147-8902',
+        'A2_147-8952', 'B3_147-8952'
+    ]
+
+    WELLS_SHAM = WELLS_DMSO
+    WELLS_DRUG = WELLS_LSD
+    
+    
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_160000"  # not used since acute mode
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_160000"  # not used since acute mode
+    DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    LABEL_SHAM = "DMSO (0.1%)"
+    LABEL_DRUG = "LSD (10 µM)"
+
+if FLAG_DATA_PSY1_DMT:
+    # Day of plating: 22.07.2026
+    # Application of BDNF: 15 div, 50 ng/ml (dissolved in water) for 24h
+    # Acute mode settings
+    FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
+    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    RELATIVE_BASELINE_X_TICK = 0
+    X_TICKS = [0, 1, 2, 3, 4] 
+    X_TICK_LABELS = ["0 (MC)", "20min", "1h", "2h", "24h"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
+    X_LABEL = "Time after Treatment"
+
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/PsyNet/2026-08-05/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "PsyNet_20260805_DMT")
+    if FLAG_RELATIVE:
+        PATH_RESULTS_FOLDER += "_relative"
+
+    # RCx01: 141-2532: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx02: 141-2511: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF
+    # RCx03: 141-2608: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx04: 147-8942: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF
+    # RCx05: 147-8943: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx06: 147-8921: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF
+    # RCx07: 147-8902: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx08: 147-8952: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF 
+    WELLS_DMSO = [
+        'A1_141-2532', 'B2_141-2532',
+        'A3_141-2511',
+        'A1_141-2608', 'B2_141-2608',
+        'A3_147-8942',
+        'A1_147-8943', 'B2_147-8943',
+        'A3_147-8921',
+        'A1_147-8902', 'B2_147-8902',
+        'A3_147-8952'
+    ]
+    WELLS_DMT = [
+        'A2_141-2532', 'B3_141-2532',
+        'B1_141-2511',
+        'A2_141-2608', 'B3_141-2608',
+        'B1_147-8942',
+        'A2_147-8943', 'B3_147-8943',
+        'B1_147-8921',
+        'A2_147-8902', 'B3_147-8902',
+        'B1_147-8952'
+    ]
+    WELLS_LSD = [
+        'A3_141-2532',
+        'A1_141-2511', 'B2_141-2511',
+        'A3_141-2608',
+        'A1_147-8942', 'B2_147-8942',
+        'A3_147-8943',
+        'A1_147-8921', 'B2_147-8921',
+        'A3_147-8902',
+        'A1_147-8952', 'B2_147-8952'
+    ]
+    WELLS_BDNF = [
+        'B1_141-2532',
+        'A2_141-2511', 'B3_141-2511',
+        'B1_141-2608',
+        'A2_147-8942', 'B3_147-8942',
+        'B1_147-8943',
+        'A2_147-8921', 'B3_147-8921',
+        'B1_147-8902',
+        'A2_147-8952', 'B3_147-8952'
+    ]
+
+    WELLS_SHAM = WELLS_DMSO
+    WELLS_DRUG = WELLS_DMT
+    
+    
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_160000"  # not used since acute mode
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_160000"  # not used since acute mode
+    DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    LABEL_SHAM = "DMSO (0.1%)"
+    LABEL_DRUG = "DMT (90 µM)"
+
+if FLAG_DATA_PSY1_BDNF:
+    # Day of plating: 22.07.2026
+    # Application of BDNF: 15 div, 50 ng/ml (dissolved in water) for 24h
+    # Acute mode settings
+    FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
+    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    RELATIVE_BASELINE_X_TICK = 0
+    X_TICKS = [0, 1, 2, 3, 4] 
+    X_TICK_LABELS = ["0 (MC)", "20min", "1h", "2h", "24h"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
+    X_LABEL = "Time after Treatment"
+
+    # KAI path to the data (server)
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/PsyNet/2026-08-05/TS/"
+
+    # Path where results will be saved
+    PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", "PsyNet_20260805_BDNF")
+    if FLAG_RELATIVE:
+        PATH_RESULTS_FOLDER += "_relative"
+
+    # RCx01: 141-2532: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx02: 141-2511: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF
+    # RCx03: 141-2608: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx04: 147-8942: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF
+    # RCx05: 147-8943: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx06: 147-8921: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF
+    # RCx07: 147-8902: A1 DMSO, A2 DMT, A3 LSD, B1 BDNF, B2 DMSO, B3 DMT 
+    # RCx08: 147-8952: A1 LSD, A2 BDNF, A3 DMSO, B1 DMT, B2 LSD, B3 BDNF 
+    WELLS_DMSO = [
+        'A1_141-2532', 'B2_141-2532',
+        'A3_141-2511',
+        'A1_141-2608', 'B2_141-2608',
+        'A3_147-8942',
+        'A1_147-8943', 'B2_147-8943',
+        'A3_147-8921',
+        'A1_147-8902', 'B2_147-8902',
+        'A3_147-8952'
+    ]
+    WELLS_DMT = [
+        'A2_141-2532', 'B3_141-2532',
+        'B1_141-2511',
+        'A2_141-2608', 'B3_141-2608',
+        'B1_147-8942',
+        'A2_147-8943', 'B3_147-8943',
+        'B1_147-8921',
+        'A2_147-8902', 'B3_147-8902',
+        'B1_147-8952'
+    ]
+    WELLS_LSD = [
+        'A3_141-2532',
+        'A1_141-2511', 'B2_141-2511',
+        'A3_141-2608',
+        'A1_147-8942', 'B2_147-8942',
+        'A3_147-8943',
+        'A1_147-8921', 'B2_147-8921',
+        'A3_147-8902',
+        'A1_147-8952', 'B2_147-8952'
+    ]
+    WELLS_BDNF = [
+        'B1_141-2532',
+        'A2_141-2511', 'B3_141-2511',
+        'B1_141-2608',
+        'A2_147-8942', 'B3_147-8942',
+        'B1_147-8943',
+        'A2_147-8921', 'B3_147-8921',
+        'B1_147-8902',
+        'A2_147-8952', 'B3_147-8952'
+    ]
+
+    WELLS_SHAM = WELLS_DMSO
+    WELLS_DRUG = WELLS_BDNF
+    
+    
+    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_160000"  # not used since acute mode
+    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_160000"  # not used since acute mode
+    DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+    LABEL_SHAM = "DMSO (0.1%)"
+    LABEL_DRUG = "BDNF (50 ng/ml in H2O)"
 
 if FLAG_DATA_DMT_HIPCOR_HIP:
     # Acute mode settings
