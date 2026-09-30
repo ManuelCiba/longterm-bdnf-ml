@@ -31,7 +31,7 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore")
 
     #exec(open(os.path.join(os.getcwd(), "script_0_1_plot_spiketrains.py")).read())
-    if 0:
+    if 1:
         exec(open(os.path.join(os.getcwd(), "script_1_0_split_data.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_2_0_calc_spike_stats.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_2_1_calc_bursts.py")).read())
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         exec(open(os.path.join(os.getcwd(), "script_2_6_calc_complex_network.py")).read())
     
     if 1:    
-        #exec(open(os.path.join(os.getcwd(), "script_3_0_make_feature_set.py")).read())
+        exec(open(os.path.join(os.getcwd(), "script_3_0_make_feature_set.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_3_1_preprocess_feature_set.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_6_0_statistics.py")).read())
     

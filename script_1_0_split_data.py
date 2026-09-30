@@ -157,17 +157,24 @@ if __name__ == '__main__':
 
         # For all files in the folder
         for file in files:
-            # Load the spike trains
+
+            # if dummy file generate empty file with date time defined in file name
+            if "dummy" in file:
+                print("Found dummy file: " + file + " -> skipping processing.")
+                continue  # Skip processing for dummy files
+            
+            # Load real spike trains
             TS, AMP, t, fs, time, date = spiketrain_handler.read_dr_cell_file(file)
 
+            # TODO remove if not needed anymore
             if 0:
-                # rename dummy files TODO remove if not needed anymore
+                # rename dummy files 
                 if "20min" in file:
                     time = file[-16:-12] + '20'
                 elif "60min" in file:
                     time = file[-16:-12] + '60'
 
-                # rename dummy files TODO remove if not needed anymore
+                # rename dummy files 
                 if "0020" in file:
                     time = file[-13:-9] + '20'
                     print("Changed time: " + file + " -> " + time)

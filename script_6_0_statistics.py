@@ -172,7 +172,8 @@ def preprocess_and_plot(df, target_path):
         #    rotation=90,
         #    fontsize=14
         #)
-        ax.set_xticklabels(settings.X_TICK_LABELS, rotation=90, fontsize=14)
+        if settings.FLAG_ACUTE_MODE:
+            ax.set_xticklabels(settings.X_TICK_LABELS, rotation=90, fontsize=14)
         ax.set_xlabel(settings.X_LABEL, fontsize=16)
         ax.set_ylabel(feature, fontsize=16)
         plt.yticks(fontsize=14)
@@ -288,7 +289,8 @@ def plot_lineplot(df, target_path):
         # Labels & styling
         ax.set_title(f"{feature} by Group Over Time", fontsize=18)
         ax.set_xticks(tick_df["x_ticks"].values)
-        ax.set_xticklabels(settings.X_TICK_LABELS, rotation=90, fontsize=14)
+        if settings.FLAG_ACUTE_MODE:
+            ax.set_xticklabels(settings.X_TICK_LABELS, rotation=90, fontsize=14)
         #ax.set_xticklabels(
         #    tick_df["x_tick_labels"].values,
         #    rotation=90,
@@ -472,7 +474,7 @@ if __name__ == '__main__':
 
             
             preprocess_and_plot(df, target_path + "/violinplots")
-            plot_lineplot(df, target_path + "/lineplots")
+            #plot_lineplot(df, target_path + "/lineplots")
             
 
     print("Script finished: script_6_0_statistics.py")

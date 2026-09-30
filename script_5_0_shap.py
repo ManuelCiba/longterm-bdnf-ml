@@ -1,3 +1,4 @@
+from ast import If
 import os
 import quantities as pq
 from matplotlib.colors import ListedColormap
@@ -143,7 +144,7 @@ def calculate_correlation_and_feature_groups(df_features):
     df_features = df_features.loc[:, df_features.nunique() > 1]
 
     # drop non-feature columns and calculate correlation matrix
-    corr = df_features.drop(columns=['y', 'chip', "x_tick_labels"]).corr(method='spearman')
+    corr = df_features.drop(columns=settings.NOT_NEEDED_FOR_SHAP_CORRELATION).corr(method='spearman')
 
     # cluster features based on correlation
     distance = 1 - np.abs(corr)
@@ -229,7 +230,10 @@ def _combine_shap_values_across_splits(shap_values_list):
 def plot_all_shap_values(base_folder, model_name, feature_groups=None, max_display=10):
 
     # TODO Here mean over all windows? (currently each window is one data point in the shap plot)
-    # if yes, use chip_train_list for this
+    # AI answer: 
+    # Want every observation to have equal weight? → current approach is appropriate; combine all SHAP observations.
+    # Want every window/chip/subject to have equal weight? → first average within each window/chip, then average those means.
+    # If your windows correspond to the same underlying chips/subjects measured repeatedly, I would generally prefer the second approach if your scientific question is "what is the typical importance across chips?" rather than "what is the importance across individual observations?"
 
     # Define filename to load
     full_path = os.path.join(base_folder, "shap_values_" + model_name + ".pkl")
@@ -251,6 +255,23 @@ def plot_all_shap_values(base_folder, model_name, feature_groups=None, max_displ
     _plot_shap_values(combined_shap, output_path, max_display)
     _plot_shap_values(combined_shap, output_path.replace("jpg", "pdf"), max_display)
 
+    # ---------------------------------------------------------
+    # SHAP interaction heatmap
+    # ---------------------------------------------------------
+
+    shap_interaction_values_list = data['shap_interaction_values_list']
+    # Get feature names from the already-grouped SHAP object
+    feature_names = list(combined_shap.feature_names)
+    interaction_output_path = os.path.join(base_folder, "SHAP_interaction_" + model_name)
+    interaction_df = _plot_shap_interaction_heatmap(
+        shap_interaction_values_list=shap_interaction_values_list,
+        feature_names=feature_names,
+        output_path_jpg=interaction_output_path + ".jpg",
+        output_path_pdf=interaction_output_path + ".pdf",
+        top_n=20,
+        class_index=1,
+    )
+
 def _plot_shap_values(shap_values, output_path, max_display=10):
     # Plot the SHAP values
     # Create subplots
@@ -267,6 +288,188 @@ def _plot_shap_values(shap_values, output_path, max_display=10):
 
     hd.save_figure(fig, output_path)
     #hd.save_figure(fig, output_path.replace("jpg", "pdf"))
+
+def _plot_shap_interaction_heatmap(
+    shap_interaction_values_list,
+    feature_names,
+    output_path_jpg,
+    output_path_pdf,
+    top_n=20,
+    class_index=1,
+):
+    """
+    Plot a SHAP interaction heatmap for the top-N features.
+
+    Parameters
+    ----------
+    shap_interaction_values_list : list
+        List of SHAP interaction matrices, one per CV split/window.
+
+        Expected shape for binary classification per element:
+            (n_samples, n_features, n_features)
+
+        For multiclass:
+            (n_samples, n_features, n_features, n_classes)
+
+    feature_names : list
+        Names of the already-grouped features.
+
+    output_path_jpg : str
+        Output path for JPG.
+
+    output_path_pdf : str
+        Output path for PDF.
+
+    top_n : int
+        Number of top features to display.
+
+    class_index : int
+        Class index for multiclass models.
+    """
+
+    # ---------------------------------------------------------
+    # Combine interaction values across all splits/windows
+    # ---------------------------------------------------------
+
+    interaction_matrices = []
+
+    for interaction_values in shap_interaction_values_list:
+
+        # Handle shap.Explanation
+        if isinstance(interaction_values, shap.Explanation):
+            interaction_values = interaction_values.values
+
+        interaction_values = np.asarray(interaction_values)
+
+        # Multiclass:
+        # (samples, features, features, classes)
+        if interaction_values.ndim == 4:
+            interaction_values = interaction_values[:, :, :, class_index]
+
+        # Binary / single-output:
+        # (samples, features, features)
+        elif interaction_values.ndim != 3:
+            raise ValueError(
+                "Unexpected SHAP interaction value shape: "
+                f"{interaction_values.shape}"
+            )
+
+        interaction_matrices.append(interaction_values)
+
+    # Pool observations from all CV splits/windows
+    combined_interactions = np.concatenate(
+        interaction_matrices,
+        axis=0
+    )
+
+    # ---------------------------------------------------------
+    # Calculate overall interaction strength
+    # ---------------------------------------------------------
+    #
+    # Mean absolute SHAP interaction value across observations.
+    #
+    # This includes diagonal/main effects at this stage.
+    # We use the resulting total interaction strength to identify
+    # the most important features.
+
+    mean_abs_interaction = np.mean(
+        np.abs(combined_interactions),
+        axis=0
+    )
+
+    # Feature importance:
+    # sum of interaction strength with all other features
+    feature_importance = np.sum(
+        mean_abs_interaction,
+        axis=1
+    )
+
+    # ---------------------------------------------------------
+    # Select top-N features
+    # ---------------------------------------------------------
+
+    top_indices = np.argsort(
+        feature_importance
+    )[::-1][:top_n]
+
+    top_feature_names = [
+        feature_names[i]
+        for i in top_indices
+    ]
+
+    print("\nTop features for SHAP interaction heatmap:")
+
+    for rank, idx in enumerate(top_indices, start=1):
+        print(
+            f"{rank:2d}. {feature_names[idx]}: "
+            f"{feature_importance[idx]:.6f}"
+        )
+
+    # ---------------------------------------------------------
+    # Extract top-N x top-N interaction matrix
+    # ---------------------------------------------------------
+
+    top_interactions = mean_abs_interaction[
+        np.ix_(top_indices, top_indices)
+    ]
+
+    # ---------------------------------------------------------
+    # DataFrame for easier plotting / inspection
+    # ---------------------------------------------------------
+
+    interaction_df = pd.DataFrame(
+        top_interactions,
+        index=top_feature_names,
+        columns=top_feature_names,
+    )
+
+    # ---------------------------------------------------------
+    # Plot
+    # ---------------------------------------------------------
+
+    plt.figure(
+        figsize=(13, 11)
+    )
+
+    sns.heatmap(
+        interaction_df,
+        cmap="viridis",
+        square=True,
+        linewidths=0.5,
+        cbar_kws={
+            "label": "Mean |SHAP interaction value|"
+        },
+    )
+
+    plt.title(
+        f"SHAP interaction strength — top {len(top_indices)} features"
+    )
+
+    plt.xticks(
+        rotation=45,
+        ha="right",
+    )
+
+    plt.yticks(
+        rotation=0,
+    )
+
+    plt.tight_layout()
+
+    plt.savefig(
+        output_path_jpg,
+        dpi=300,
+        bbox_inches="tight",
+    )
+
+    plt.savefig(
+        output_path_pdf,
+        bbox_inches="tight",
+    )
+
+    plt.close()
+
+    return interaction_df
 
 def OLDplot_shap_correlation(base_folder, models):
     shap_model_list = []
@@ -390,83 +593,6 @@ def plot_all_shap_dependence(base_folder, models, scaler, scaled_columns):
         full_path = os.path.join(base_folder, "SHAP_all_dependence_" + model_name + ".pdf")
         hd.save_figure(fig, full_path)
     
-def OLDcalculate_shap_values(base_folder, model_name, X_train_list, df_train_results):
-    """
-    Calculate SHAP values for a single model and save them to disk.
-    """
-    full_path = os.path.join(base_folder, f"shap_values_{model_name}.pkl")
-
-    if os.path.isfile(full_path):
-        print("SHAP values already calculated: " + full_path)
-        return True
-
-    shap_values_list = []
-    X_train_sampled_list = []
-
-    # Filter rows for this model only
-    df_model_results = df_train_results[df_train_results['Model'] == model_name].reset_index(drop=True)
-
-    if len(df_model_results) != len(X_train_list):
-        print("Mismatch between number of splits and model results.")
-        return False
-
-    for i in range(len(X_train_list)):
-        split_model_row = df_model_results.iloc[i]
-        best_model = split_model_row['clf_best']
-        X_train = X_train_list[i]
-
-        # Sample rows for speed if desired
-        X_train_sampled = X_train  # or X_train.sample(500, random_state=42)
-        X_train_sampled_list.append(X_train_sampled)
-
-        # Create the explainer
-        np.random.seed(42)
-        if model_name in ["RF"]:
-            background = shap.sample(X_train, 50)
-            explainer = shap.TreeExplainer(best_model, data=background, feature_perturbation="interventional")
-        elif model_name in ["XGboost", "LightGBM", "CatBoost"]:
-            background = shap.sample(X_train, 50)
-            explainer = shap.TreeExplainer(best_model, data=background, feature_perturbation="interventional", model_output="probability")
-        elif model_name in ["SVM", "LR", "KNN", "MLP"]:
-            background = shap.kmeans(X_train, 50)
-            explainer = shap.KernelExplainer(best_model.predict_proba, background)
-        elif model_name == "NB":
-            background = shap.sample(X_train, 50)
-            explainer = shap.Explainer(best_model.predict_proba, background)
-        else:
-            raise ValueError("Unknown model type: " + model_name)
-
-        if model_name in ["RF", "XGboost", "LightGBM", "CatBoost"]:
-            shap_values = explainer(X_train_sampled, check_additivity=False)
-        else:
-            shap_values = explainer(X_train_sampled)
-        shap_values_list.append(shap_values)
-
-        # Plot individual SHAP values
-        output_path = os.path.join(base_folder, f"shap_{model_name}_split_{i}.jpg")
-        _plot_shap_values(shap_values, output_path=output_path)
-
-        output_path_dep = os.path.join(base_folder, f"shap_dependence_{model_name}_split_{i}.jpg")
-        #try:
-        #    _plot_shap_dependence(
-        #        shap_values,
-        #        X_train_sampled,
-        #        feature_name="x_tick_labels",
-        #        output_path=output_path_dep,
-        #        interaction_index=None
-        #    )
-        #except Exception as e:
-        #    print(e)
-
-    # Save both SHAP values and sampled X_train
-    hd.save_obj_as_pkl({
-        'shap_values_list': shap_values_list,
-        'X_train_sampled_list': X_train_sampled_list
-    }, full_path)
-    print("Saved SHAP values and sampled X_train to: " + full_path)
-
-    return True
-
 def calculate_shap_values(base_folder, model_name, X_train_list, chip_train_list, df_train_results):
     """
     Calculate SHAP values for a single model on outer test sets and save them to disk.
@@ -479,6 +605,7 @@ def calculate_shap_values(base_folder, model_name, X_train_list, chip_train_list
         return True
 
     shap_values_list = []
+    shap_interaction_values_list = []
     X_train_sampled_list = []
     chip_id_list = []
 
@@ -530,6 +657,12 @@ def calculate_shap_values(base_folder, model_name, X_train_list, chip_train_list
 
         shap_values_list.append(shap_values)
 
+        # Compute Shap interaction values if supported
+        if model_name in ["RF", "XGboost", "LightGBM", "CatBoost"]:
+            shap_interaction_values = explainer.shap_interaction_values(X_train_sampled)
+            shap_interaction_values_list.append(shap_interaction_values)    
+
+
         # Plot individual SHAP values
         output_path = os.path.join(base_folder, f"shap_{model_name}_split_{i}.jpg")
         _plot_shap_values(shap_values, output_path=output_path)
@@ -538,7 +671,8 @@ def calculate_shap_values(base_folder, model_name, X_train_list, chip_train_list
     hd.save_obj_as_pkl({
         'shap_values_list': shap_values_list,
         'X_train_sampled_list': X_train_sampled_list,
-        'chip_id_list': chip_id_list
+        'chip_id_list': chip_id_list,
+        'shap_interaction_values_list': shap_interaction_values_list
     }, full_path)
 
     print("Saved SHAP values and chip IDs to: " + full_path)
