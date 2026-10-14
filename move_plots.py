@@ -13,29 +13,48 @@ def copy_plots_from_results_to_plots(plots_dir, subfolder):
     shutil.copytree(source, destination, dirs_exist_ok=True)
     #print("Copied statistics folder")
 
-    for folder in subfolder.iterdir():
+    # copy whole ML folder
+    source = subfolder / "3_1_ML_all"
+    destination = output_subfolder / "3_1_ML_all"
+    shutil.copytree(source, destination, dirs_exist_ok=True)
+    #print("Copied ML folder")
 
-        if folder.name == "3_1_ML_all":
-            filename = "AUC_summary_CatBoost.pdf"
-            source = folder / filename
-            destination = output_subfolder / filename
-            shutil.copy2(source, destination)
+    # copy whole SHAP folder
+    source = subfolder / "3_2_SHAP_all"
+    destination = output_subfolder / "3_2_SHAP_all"
+    shutil.copytree(source, destination, dirs_exist_ok=True)
+    #print("Copied SHAP folder")
 
-        if folder.name == "3_2_SHAP_all":
+    if 0:
+        for folder in subfolder.iterdir():
 
-            filename = "feature_groups.pdf"
-            source = folder / "bin_1.0 ms/window_240.0 s/overlap_0.75/" /filename
-            destination = output_subfolder / folder.name / filename
-            shutil.copy2(source, destination)
-
-            folder2 = folder / "bin_1.0 ms/window_240.0 s/overlap_0.75/CatBoost"
-            for folder3 in folder2.iterdir():
-                new_folder = output_subfolder / folder.name / folder3.name
-                new_folder.mkdir(parents=True, exist_ok=True)
-                filename = "SHAP_all_grouped_CatBoost.pdf"
-                source = folder3 / filename
-                destination = new_folder / filename
+            if folder.name == "3_1_ML_all":
+                filename = "AUC_summary_CatBoost.pdf"
+                source = folder / filename
+                destination = output_subfolder / filename
                 shutil.copy2(source, destination)
+
+            if folder.name == "3_2_SHAP_all":
+
+                filename = "feature_groups.pdf"
+                source = folder / "bin_1.0 ms/window_240.0 s/overlap_0.75/" /filename
+                destination = output_subfolder / folder.name / filename
+                shutil.copy2(source, destination)
+
+                folder2 = folder / "bin_1.0 ms/window_240.0 s/overlap_0.75/CatBoost"
+                for folder3 in folder2.iterdir():
+                    new_folder = output_subfolder / folder.name / folder3.name
+                    new_folder.mkdir(parents=True, exist_ok=True)
+
+                    filename = "SHAP_all_grouped_CatBoost.jpg"
+                    source = folder3 / filename
+                    destination = new_folder / filename
+                    shutil.copy2(source, destination)
+
+                    filename = "SHAP_all_interaction_CatBoost.jpg"
+                    source = folder3 / filename
+                    destination = new_folder / filename
+                    shutil.copy2(source, destination)
 
             
 

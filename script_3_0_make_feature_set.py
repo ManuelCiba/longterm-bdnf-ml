@@ -48,17 +48,6 @@ def get_feature_set_df(source_path):
             # Define the full path to the recording folder
             rec_folder_path = os.path.join(chip_folder_path, rec_folder)
 
-            # old, now is done in preprocess step
-            if 0:
-                # define label that represents the days after DRUG treatment
-                # get the date from the folder name
-                date_time_of_file = datetime.strptime(rec_folder, "%Y%m%d_%H%M%S")
-                date_time_DRUG_finished = datetime.strptime(settings.DATE_TIME_DRUG_TREATMENT_FINISHED, "%Y%m%d_%H%M%S")
-                
-                # Calculate the difference as a fraction of a day
-                delta = date_time_of_file - date_time_DRUG_finished
-                label_days_after_treatment = delta.total_seconds() / (24 * 3600)
-
             # List all .csv files in the folder
             files = [f for f in os.listdir(rec_folder_path) if f.endswith('.csv')]
             # sort the files
@@ -84,27 +73,7 @@ def get_feature_set_df(source_path):
     # transform df_list to a single DataFrame
     df_feature_set = _merge_list_of_df_to_one_df(df_list)
 
-    # round "days_after_treatment" (important especially if group1 and group2 were not recorded at same time but sequentially - in this case ML will learn the days!) 
-    #df_feature_set["days_after_treatment"] = df_feature_set["days_after_treatment"].apply(bin_time)
-    
-    # remove excluded days
-    #if settings.DATE_TIME_LAST_RECORDING != "":
-    #    print(f"Removing recordings after {settings.DATE_TIME_LAST_RECORDING} ...")
-    #    df_feature_set = _remove_excluded_days(df_feature_set)
-
     return df_feature_set
-
-def _remove_excluded_days(df):
-    # Convert 'recording' column to datetime
-    rec = pd.to_datetime(df['recording'], format="%Y%m%d_%H%M%S")
-
-    # Convert the last recording date from settings to datetime
-    DATE_TIME_LAST_RECORDING = pd.to_datetime(settings.DATE_TIME_LAST_RECORDING, format="%Y%m%d_%H%M%S")
-
-    # Filter the DataFrame to include only rows before or on the last recording date
-    df_filtered = df[rec <= DATE_TIME_LAST_RECORDING]
-
-    return df_filtered
 
 def _merge_list_of_df_to_one_df(df_list):
     merged_df = pd.concat(df_list, axis=0, ignore_index=True)
@@ -140,15 +109,6 @@ def _merge_two_dataframes_together(df1, df2):
     #df = df.dropna(subset=["days_after_treatment"])
     return df
 
-def bin_time(x):
-    # Define custom bins for decimals
-    day = int(x)  # whole day
-    return day
-    #frac = x - day
-    #if frac < 0.55:
-    #    return day + 0.4 # morning
-    #else:
-    #    return day + 0.6  # noon
 
 
 if __name__ == '__main__':

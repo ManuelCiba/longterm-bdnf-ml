@@ -1,5 +1,6 @@
 import warnings
 warnings.filterwarnings("ignore")
+from bokeh.settings import Settings
 from sklearn.exceptions import ConvergenceWarning
 from joblib import Parallel, delayed
 import multiprocessing
@@ -9,11 +10,15 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from lib.machine_learning import workflow_unpaired_optatune as workflow_unpaired_optatune
+
 from lib.data_handler import folder_structure
 from lib.data_handler import hd
 import settings
 
+if settings.WELLS_SHAM == []:
+    from lib.machine_learning import workflow_paired_optatune as workflow_ml
+else:
+    from lib.machine_learning import workflow_unpaired_optatune as workflow_ml
 
 def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
     
@@ -72,11 +77,11 @@ def run_by_day(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
                 df_features_day = df_features_day.drop(columns=["x_tick_labels"])
 
                 try:
-                    df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired_optatune.call(model, df_features_day)
+                    df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_ml.call(model, df_features_day)
                 except Exception as e:
                     print("Error in ML workflow for day " + str(day) + ": " + str(e))
                     continue
-                workflow_unpaired_optatune.save_df_results_to_hd(target_path,
+                workflow_ml.save_df_results_to_hd(target_path,
                                         df_train_results,
                                         df_test_results,
                                         X_train_list,
@@ -114,25 +119,25 @@ def calculate_ci_and_plot_results(models, SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER
 
                 target_path = os.path.join(model_path, day)
 
-                df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired_optatune.load_df_results_from_hd(target_path)
+                df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_ml.load_df_results_from_hd(target_path)
                 
                 # optionally recalculate test results (e.g. if code changed)
                 if df_test_results is None:
-                    df_test_results = workflow_unpaired_optatune.get_test_results(model, y_true_all, y_pred_all)
+                    df_test_results = workflow_ml.get_test_results(model, y_true_all, y_pred_all)
 
                 # save figs
                 fig_test_path = os.path.join(target_path, "fig_test.pdf")
                 fig_train_path = os.path.join(target_path, "fig_train.pdf")
-                fig_test = workflow_unpaired_optatune.plot_test_results(df_test_results)
+                fig_test = workflow_ml.plot_test_results(df_test_results)
                 hd.save_figure(fig_test, fig_test_path, verbose=False)
                 #hd.save_figure(fig_train, fig_train_path)
 
                 # calculate ci
-                mean, lower, upper = workflow_unpaired_optatune.calculate_confidence_interval_for_auc(y_true_all, y_pred_all, n_bootstraps=2000, alpha=0.95, seed=1234)
+                mean, lower, upper = workflow_ml.calculate_confidence_interval_for_auc(y_true_all, y_pred_all, n_bootstraps=2000, alpha=0.95, seed=1234)
                 df_test_results['AUC_CI_lower'] = lower
                 df_test_results['AUC_CI_upper'] = upper
                 df_test_results['AUC_CI_mean'] = mean
-                workflow_unpaired_optatune.save_df_results_to_hd(target_path, df_train_results, df_test_results, X_train_list, y_train_list, X_test_list,
+                workflow_ml.save_df_results_to_hd(target_path, df_train_results, df_test_results, X_train_list, y_train_list, X_test_list,
                           y_test_list, chip_train_list, y_pred_all, y_true_all, verbose=False)
                 print(f"Confidence interval for AUC: mean={mean:.3f}, lower={lower:.3f}, upper={upper:.3f}")
                 

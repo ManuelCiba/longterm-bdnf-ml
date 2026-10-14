@@ -12,12 +12,13 @@ import settings
 from lib.data_handler import folder_structure
 from lib.data_handler import hd
 from datetime import datetime
-from scipy.stats import mannwhitneyu
+from scipy.stats import mannwhitneyu, wilcoxon # statistical tests
 from scipy.stats import false_discovery_control # FDR correction for multiple testing
 from statsmodels.stats.multitest import multipletests
 import statsmodels.formula.api as smf # LMM
 import patsy
 
+FLAG_OVERWRITE = False 
 correction_method = "p" # "p": no correction, "p_fdr": fdr correction, "p_bonf": bonferroni correction
 
 
@@ -33,8 +34,12 @@ def preprocess_and_plot(df, target_path):
     
     # Group by 'chip', 'group', and '"x_ticks"', calculate the mean
     df_mean = df.groupby(["chip", "group", "x_ticks"], as_index=False)[feature_cols].mean()
+    df_mean = df_mean.sort_values(by=["chip", "x_ticks"]).reset_index(drop=True)
 
-    # simple mann whitney u test
+    full_target_path_all_values = os.path.join(target_path, "#all_values.csv")
+    hd.save_df_as_csv(df_mean, full_target_path_all_values)
+
+    # simple pairwise test
     if 1:
         all_results = []
         for feature in feature_cols:
@@ -44,17 +49,29 @@ def preprocess_and_plot(df, target_path):
                 drug_vals = df_mean[(df_mean["x_ticks"] == day) & (df_mean["group"] == "DRUG")][feature]
                 sham_vals = df_mean[(df_mean["x_ticks"] == day) & (df_mean["group"] == "SHAM")][feature]
                 
-                drug_vals = drug_vals.dropna()
-                sham_vals = sham_vals.dropna()
+                drug_vals = drug_vals.dropna().to_list()
+                sham_vals = sham_vals.dropna().to_list()
 
-                # Perform test
-                if len(drug_vals) > 1 and len(sham_vals) > 1:
-                    _, p_val = mannwhitneyu(sham_vals, drug_vals, alternative="two-sided")
+                if settings.WELLS_SHAM == []:
+                    # Wilcoxon signed-rank test (paired)
+                    try:
+                        _, p_val = wilcoxon(sham_vals, drug_vals)
+                    except ValueError:
+                        p_val = np.nan
                     all_results.append({
                         "feature": feature,
-                        "day": day,
+                        "x": day,
                         "p": p_val
                     })
+                else:
+                    # Mann-Whitney U test (unpaired)
+                    if len(drug_vals) > 1 and len(sham_vals) > 1:
+                        _, p_val = mannwhitneyu(sham_vals, drug_vals, alternative="two-sided")
+                        all_results.append({
+                            "feature": feature,
+                            "x": day,
+                            "p": p_val
+                        })
 
     # LMM test - does not work yet - too unstable (better: use permutation test?)
     if 0:
@@ -81,12 +98,23 @@ def preprocess_and_plot(df, target_path):
         df_p["p"], method="bonferroni"
     )[1]
 
+    # Save p values
+    full_target_path_p = os.path.join(target_path, '#p_values' + '.csv')
+    hd.save_df_as_csv(df_p, full_target_path_p)
+
     # plot results
     group_order = ["SHAM", "DRUG"]
     for feature in feature_cols:
 
+        feature_formatted = feature.replace("/", "_per_").replace(" ", "_")
+        full_target_path = os.path.join(target_path, feature_formatted + '.pdf')
+        # skip loop if file already exists
+        if os.path.isfile(full_target_path) and not FLAG_OVERWRITE:
+            print("Already calculated: " + full_target_path)
+            continue
+
         df_p_feature = df_p[df_p["feature"] == feature]
-        p_values = df_p_feature.set_index("day")[correction_method].to_dict()
+        p_values = df_p_feature.set_index("x")[correction_method].to_dict()
 
         # Create the plot
         plt.figure(figsize=(10, 6))
@@ -167,13 +195,13 @@ def preprocess_and_plot(df, target_path):
         # Labels & styling
         ax.set_title(f"{feature} by Group Over Time", fontsize=18)
         ax.set_xticks(range(len(tick_df)))
-        #ax.set_xticklabels(
-        #    tick_df["x_tick_labels"],
-        #    rotation=90,
-        #    fontsize=14
-        #)
-        if settings.FLAG_ACUTE_MODE:
-            ax.set_xticklabels(settings.X_TICK_LABELS, rotation=90, fontsize=14)
+        ax.set_xticklabels(
+            tick_df["x_tick_labels"],
+            rotation=90,
+            fontsize=14
+        )
+        #if settings.FLAG_ACUTE_MODE:
+        #    ax.set_xticklabels(settings.X_TICK_LABELS, rotation=90, fontsize=14)
         ax.set_xlabel(settings.X_LABEL, fontsize=16)
         ax.set_ylabel(feature, fontsize=16)
         plt.yticks(fontsize=14)
@@ -248,8 +276,6 @@ def preprocess_and_plot(df, target_path):
 
         # Save the plot
         plt.tight_layout()
-        feature = feature.replace("/", "_per_").replace(" ", "_")
-        full_target_path = os.path.join(target_path, feature + '.pdf')
         hd.save_figure(plt.gcf(), full_target_path)
         print(f"Saved feature set to {full_target_path}")
 

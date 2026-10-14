@@ -7,6 +7,7 @@ import os
 import quantities as pq
 
 DATA = str(os.environ.get("DATA_tmp", 1)) # defined in auto_call_main.py
+FLAG_RELATIVE = 1
 
 #DATA = "PsyNet_20260805_LSD"
 #DATA = "PsyNet_20260805_DMT"
@@ -37,15 +38,30 @@ FLAG_ACUTE_MODE = 0 # Set to True if you want to analyze data in acute mode (in 
 
 print("DATA: " + DATA)
 
+
+
+
 if DATA == "PsyNet_20260820_DMT_24h":
 
-    FLAG_RELATIVE = 1
-    TIME_WINDOW_HOURS = 1 # for calculating the time after treatment (24h = days after treatment)
-    X = "Time after treatment" # Column name for X-axis
+    FLAG_ACUTE_MODE = 0 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
+    BASELINE_X_TICK = 1 # x-tick that is used as baseline (for relative change and paired sample design)
+  
     X_LABEL = "Time after DMT application in hours"
-
+    
+    # settings for file mode or time mode
+    if FLAG_ACUTE_MODE: 
+        X_TICKS = [] 
+        X_TICK_LABELS = []
+    else:
+        TIME_WINDOW_HOURS = 1 # average recordings over x hours (24h = days after treatment)
+        DATE_TIME_DRUG_TREATMENT_STARTED = "20260821_165000"  # ? "20260424_160000"
+        DATE_TIME_DRUG_TREATMENT_FINISHED = "20260821_165000"  # ? "20260427_160000"
+        DATE_TIME_LAST_RECORDING = "" # set to "" for all data
+        if FLAG_RELATIVE:
+            DATE_TIME_NORMALIZATION = "20260821_155700" # set only date, or datetime
+    
     # KAI path to the data (server)
-    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/PsyNet/2026-08-26_DMT_24h/TS/"
+    PATH_DATA_FOLDER = "/home/mciba/Documents/2025-07_BDNF/data/PsyNet/2026-08-26_DMT_24h/included/TS/"
 
     # Path where results will be saved
     PATH_RESULTS_FOLDER = os.path.join(os.getcwd(), "results", DATA)
@@ -53,30 +69,21 @@ if DATA == "PsyNet_20260820_DMT_24h":
     if FLAG_RELATIVE:
         PATH_RESULTS_FOLDER += "_relative"
 
-
-    WELLS_SHAM = ['A1_132-1807', 'A1_141-2608', 'A1_141-2511', 'A1_141-2532',
-                 'A2_132-1807', 'A2_141-2608', 'A2_141-2511', 'A2_141-2532',
-                 'A3_132-1807', 'A3_141-2608', 'A3_141-2511', 'A3_141-2532']
-    WELLS_DRUG = ['B1_132-1807', 'B1_141-2608', 'B1_141-2511', 'B1_141-2532',
-                  'B2_132-1807', 'B2_141-2608', 'B2_141-2511', 'B2_141-2532',
-                  'B3_132-1807', 'B3_141-2608', 'B3_141-2511', 'B3_141-2532']
+    WELLS_SHAM = [] # if empty, then baseline of WELLS_DRUG is compared with all other time points (=paired samples)
+    WELLS_DRUG = ['A1_132-1844', 'A2_132-1844', 'A3_132-1844', 'B1_132-1844', 'B2_132-1844', 'B3_132-1844'] 
     
-    DATE_TIME_DRUG_TREATMENT_STARTED = "20260424_000000"  # ? "20260424_160000"
-    DATE_TIME_DRUG_TREATMENT_FINISHED = "20260427_000000"  # ? "20260427_160000"
-    DATE_TIME_LAST_RECORDING = "" # set to "" for all data
-    DATE_TIME_NORMALIZATION = "20260428" 
-    LABEL_SHAM = "Sham"
-    LABEL_DRUG = "DMT"
+    LABEL_SHAM = "Baseline (before DMT application)"
+    LABEL_DRUG = "DMT (90 µM)"
 
 if DATA == "PsyNet_20260805_DMT_VS_LSD":
     # Day of plating: 22.07.2026
     # Application of BDNF: 15 div, 50 ng/ml (dissolved in water) for 24h
     # Acute mode settings
     FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
-    RELATIVE_BASELINE_X_TICK = 1
+    #FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    BASELINE_X_TICK = 1
     X_TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] 
-    X_TICK_LABELS = ["-1h", "-20min", "20min", "1h", "2h", "24h", "0d", "1d", "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "10d", "11d", "12d", "13d", "14d"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
+    X_TICK_LABELS = ["-1d", "-20min", "20min", "1h", "2h", "24h", "0d", "1d", "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "10d", "11d", "12d", "13d", "14d"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
     X_LABEL = "Time after Treatment"
 
     # KAI path to the data (server)
@@ -151,10 +158,10 @@ if DATA == "PsyNet_20260805_LSD":
     # Application of BDNF: 15 div, 50 ng/ml (dissolved in water) for 24h
     # Acute mode settings
     FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-    FLAG_RELATIVE = 1 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
-    RELATIVE_BASELINE_X_TICK = 1
+    #FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    BASELINE_X_TICK = 1
     X_TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] 
-    X_TICK_LABELS = ["-1h", "-20min", "20min", "1h", "2h", "24h", "0d", "1d", "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "10d", "11d", "12d", "13d", "14d"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
+    X_TICK_LABELS = ["-1d", "-20min", "20min", "1h", "2h", "24h", "0d", "1d", "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "10d", "11d", "12d", "13d", "14d"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
     X_LABEL = "Time after Treatment"
 
     # KAI path to the data (server)
@@ -229,10 +236,10 @@ if DATA == "PsyNet_20260805_DMT":
     # Application of BDNF: 15 div, 50 ng/ml (dissolved in water) for 24h
     # Acute mode settings
     FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
-    RELATIVE_BASELINE_X_TICK = 1
+    #FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    BASELINE_X_TICK = 1
     X_TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] 
-    X_TICK_LABELS = ["-1h", "-20min", "20min", "1h", "2h", "24h", "0d", "1d", "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "10d", "11d", "12d", "13d", "14d"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
+    X_TICK_LABELS = ["-1d", "-20min", "20min", "1h", "2h", "24h", "0d", "1d", "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "10d", "11d", "12d", "13d", "14d"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
     X_LABEL = "Time after Treatment"
 
     # KAI path to the data (server)
@@ -307,10 +314,10 @@ if DATA == "PsyNet_20260805_BDNF":
     # Application of BDNF: 15 div, 50 ng/ml (dissolved in water) for 24h
     # Acute mode settings
     FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-    FLAG_RELATIVE = 1 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
-    RELATIVE_BASELINE_X_TICK = 1
+    #FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    BASELINE_X_TICK = 1
     X_TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] 
-    X_TICK_LABELS = ["-1h", "-20min", "20min", "1h", "2h", "24h", "0d", "1d", "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "10d", "11d", "12d", "13d", "14d"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
+    X_TICK_LABELS = ["-1d", "-20min", "20min", "1h", "2h", "24h", "0d", "1d", "2d", "3d", "4d", "5d", "6d", "7d", "8d", "9d", "10d", "11d", "12d", "13d", "14d"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
     X_LABEL = "Time after Treatment"
 
     # KAI path to the data (server)
@@ -380,12 +387,11 @@ if DATA == "PsyNet_20260805_BDNF":
     LABEL_SHAM = "DMSO (0.1%)"
     LABEL_DRUG = "BDNF (50 ng/ml in H2O)"
 
-
 if DATA == "DMT_DIV64_HipCor_Hip":
     # Acute mode settings
     FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
     FLAG_RELATIVE = 1 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
-    RELATIVE_BASELINE_X_TICK = 0
+    BASELINE_X_TICK = 0
     X_TICKS = [0, 1, 2, 3, 4, 5, 6] 
     X_TICK_LABELS = ["30 (20min)", "30 (1h)", "90 (20min)", "90 (1h)", "150 (20min)", "150 (1h)", "150 (24h)"] 
     X_LABEL = "DMT in µM"
@@ -425,7 +431,7 @@ if DATA == "DMT_DIV64_HipCor_Cor":
     # Acute mode settings
     FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
     FLAG_RELATIVE = 1 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
-    RELATIVE_BASELINE_X_TICK = 0
+    BASELINE_X_TICK = 0
     X_TICKS = [0, 1, 2, 3, 4, 5, 6] 
     X_TICK_LABELS = ["30 (20min)", "30 (1h)", "90 (20min)", "90 (1h)", "150 (20min)", "150 (1h)", "150 (24h)"] 
     X_LABEL = "DMT in µM"
@@ -466,7 +472,7 @@ if DATA == "DMT_DIV30_ACUTE":
     # Acute mode settings
     FLAG_ACUTE_MODE = 1 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
     FLAG_RELATIVE = 1 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
-    RELATIVE_BASELINE_X_TICK = 0
+    BASELINE_X_TICK = 0
     X_TICKS = [0, 1, 2, 3] 
     X_TICK_LABELS = ["0", "90 (20min)", "90 (90min)", "0 (24h)"] # for acute data, only 0h and 1.5h time points, because only these two time points are available for all wells. For long-term data, we can use all time points, because they are the same for all wells.
     X_LABEL = "DMT in µM"
@@ -719,13 +725,13 @@ if DATA == "ESTRANGE_DATA2_TC":
 
 if DATA == "ESTRANGE_DATA3_XRAY_COR_VS_SHAM":
     FLAG_ACUTE_MODE = 0 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    #FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
 
     X_LABEL = "Days after Treatment"
     
     # settings for file mode or time mode
     if FLAG_ACUTE_MODE:
-        RELATIVE_BASELINE_X_TICK = 0
+        BASELINE_X_TICK = 0
         X_TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] 
         X_TICK_LABELS = ["-1", "1", "2", "3", "4", "5", "6", "7", "8", "9", "12", "13", "14"]
     else:
@@ -781,13 +787,13 @@ if DATA == "ESTRANGE_DATA3_XRAY_COR_VS_SHAM":
 
 if DATA == "ESTRANGE_DATA3_XRAY_HIP_VS_SHAM":
     FLAG_ACUTE_MODE = 0 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    #FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
 
     X_LABEL = "Days after Treatment"
     
     # settings for file mode or time mode
     if FLAG_ACUTE_MODE:
-        RELATIVE_BASELINE_X_TICK = 0
+        BASELINE_X_TICK = 0
         X_TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] 
         X_TICK_LABELS = ["-1", "1", "2", "3", "4", "5", "6", "7", "8", "9", "12", "13", "14"]
     else:
@@ -843,13 +849,13 @@ if DATA == "ESTRANGE_DATA3_XRAY_HIP_VS_SHAM":
 
 if DATA == "ESTRANGE_DATA3_XRAY_COR_VS_HIP":
     FLAG_ACUTE_MODE = 0 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    #FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
 
     X_LABEL = "Days after Treatment"
     
     # settings for file mode or time mode
     if FLAG_ACUTE_MODE:
-        RELATIVE_BASELINE_X_TICK = 0
+        BASELINE_X_TICK = 0
         X_TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] 
         X_TICK_LABELS = ["-1", "1", "2", "3", "4", "5", "6", "7", "8", "9", "12", "13", "14"]
     else:
@@ -905,13 +911,13 @@ if DATA == "ESTRANGE_DATA3_XRAY_COR_VS_HIP":
 
 if DATA == "ESTRANGE_DATA3_SHAM_HIP_VS_COR":
     FLAG_ACUTE_MODE = 0 # Set to True if you want to analyze data in acute mode (in each chip folder, each file corresponds to a drug concentration - time stamps are not used so also experiments from different days can be pooled)
-    FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
+    #FLAG_RELATIVE = 0 # Set to True if you want to calculate the relative change to baseline (baseline is the first time point, which is before drug application, so it is the same for all wells). Only used in acute mode. In long-term mode, we cannot use relative change, because the time points are different for each well, so we have to use absolute values.
 
     X_LABEL = "Days after Treatment"
     
     # settings for file mode or time mode
     if FLAG_ACUTE_MODE:
-        RELATIVE_BASELINE_X_TICK = 0
+        BASELINE_X_TICK = 0
         X_TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] 
         X_TICK_LABELS = ["-1", "1", "2", "3", "4", "5", "6", "7", "8", "9", "12", "13", "14"]
     else:

@@ -114,12 +114,15 @@ def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folde
         yerr_upper = df_model['AUC_CI_upper'] - y
         yerr = [yerr_lower.values, yerr_upper.values]
 
-        x = df_model['x']
-
+        
         # create xticklabels if not provided
         if xticks == "":
-            xticks = x
-            xtick_labels = [f"Day {int(d)}" for d in x]
+            xticks = df_model["x"].rank(method="dense").astype(int) - 1
+            x = xticks
+            xtick_labels = df_model["x"].astype(int).astype(str)
+        else:
+            x = df_model['x']
+            
 
         # Create figure
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -132,16 +135,28 @@ def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folde
 
         # Add AUC_CI_lower inside bars, rotated 90 degrees
         for bar, ci_lower in zip(bars, df_model['AUC_CI_lower']):
+
+            if ci_lower < 0.7:
+                text_color = 'black'
+                alpha = 0.2
+            else:
+                text_color = 'white'
+                alpha = 0.5
+
+            #text_string = "AUC" + r"$_{min}$" + f"={ci_lower:.2f}"
+            text_string = "AUCmin=" + f"{ci_lower:.2f}"
+
             height = bar.get_height()
             ax.text(
                 bar.get_x() + bar.get_width() / 2,   # X center of bar
                 height * 0.05,                       # small padding from bottom
-                f"AUCmin={ci_lower:.2f}",                   # label text
+                text_string,                   # label text
                 ha='center',
                 va='bottom',
                 rotation=90,
                 fontsize=16,
-                color='white',
+                color=text_color,
+                alpha=alpha,
                 weight='bold'
             )
 
@@ -151,7 +166,7 @@ def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folde
         ax.set_ylabel("AUC", fontsize=16)
         ax.set_ylim(0.0, 1.05)
         ax.set_xticks(xticks)
-        ax.set_xticklabels(xtick_labels, rotation=45, fontsize=16)
+        ax.set_xticklabels(xtick_labels, rotation=90, fontsize=16)
         ax.set_yticks(np.arange(0, 1.1, 0.1))
         ax.tick_params(axis='y', labelsize=14)
 
@@ -162,7 +177,9 @@ def plot_auc_per_model(df, window_overlap_value=75, bin_size_value=1, base_folde
 
         # Save figure
         full_path = os.path.join(base_folder, f"AUC_summary_{model}.pdf")
-        plt.savefig(full_path)
+        #plt.savefig(full_path)
+        hd.save_figure(plt.gcf(), full_path)
+        hd.save_df_as_csv(df_model, os.path.join(base_folder, full_path.replace(".pdf", ".csv")))
         plt.close()
         print(f"Saved AUC plot for {model} to: {full_path}")
 
@@ -184,14 +201,11 @@ if __name__ == '__main__':
         # relative to %
         df["Window overlap"] = df["Window overlap"] * 100
 
+        xlabel = settings.X_LABEL
         if settings.FLAG_ACUTE_MODE == 0:
-            condition_col = "days_after_treatment"
-            xlabel = "Days After Treatment"
             xticks = ""
             xtick_labels = ""
         else:
-            condition_col = "condition"
-            xlabel = settings.X_LABEL
             xticks = settings.X_TICKS
             xtick_labels = settings.X_TICK_LABELS
 

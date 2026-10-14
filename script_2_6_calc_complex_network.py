@@ -22,7 +22,9 @@ TARGET_PATH = os.path.join(settings.PATH_RESULTS_FOLDER, settings.FOLDER_NAME_fe
 
 def calculate_and_plot_and_save_complex_network(source_path, target_path):
     df_cm = hd.load_csv_as_df(full_path=source_path, index_col=False)
-                    
+    df_dm = hd.load_csv_as_df(full_path=source_path.replace("CM", "DM"), index_col=False)
+               
+
     CM_all, CM_exc, CM_inh = _process_connectivity_matrix(df_cm, flag_tresholding=False)
 
     results_wd_exc =_compute_weighted_directed_features(CM_exc, CM_all, prefix="CM_exc")

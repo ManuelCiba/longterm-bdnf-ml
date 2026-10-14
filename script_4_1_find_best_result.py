@@ -1,12 +1,16 @@
 import os
-
-from lib.machine_learning import workflow_unpaired_optatune
 from lib.data_handler import folder_structure
 from lib.data_handler import hd
 import settings
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+
+if settings.WELLS_SHAM == []:
+    from lib.machine_learning import workflow_paired_optatune as workflow_ml
+else:
+    from lib.machine_learning import workflow_unpaired_optatune as workflow_ml
+
 
 def find_best_result(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
 
@@ -48,7 +52,7 @@ def find_best_result(SOURCE_DATA_FOLDER, TARGET_DATA_FOLDER):
 
                             target_path = os.path.join(model_path, day)
 
-                            df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_unpaired_optatune.load_df_results_from_hd(target_path)
+                            df_train_results, df_test_results, X_train_list, y_train_list, X_test_list, y_test_list, chip_train_list, y_pred_all, y_true_all = workflow_ml.load_df_results_from_hd(target_path)
 
                             df_results = df_test_results
 
