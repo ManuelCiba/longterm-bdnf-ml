@@ -12,6 +12,8 @@ if 0:
 
 if 1:
     DATA_SET = ["PsyNet_20260805_DMT_VS_LSD", 
+                "PsyNet_20260805_BDNF_VS_LSD", 
+                "PsyNet_20260805_BDNF_VS_DMT",
                 "PsyNet_20260805_LSD",
                 "PsyNet_20260805_DMT",
                 "PsyNet_20260805_BDNF"]

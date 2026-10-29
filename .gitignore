@@ -1,5 +1,6 @@
 results/*
 plots/*
+Summary/*
 __pycache__/
 *.pyc
 .venv/*

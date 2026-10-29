@@ -21,6 +21,31 @@ import patsy
 FLAG_OVERWRITE = False 
 correction_method = "p" # "p": no correction, "p_fdr": fdr correction, "p_bonf": bonferroni correction
 
+def _save_boxplot_as_csv(df_mean, feature_cols, target_path):
+    # Convert the data to long format
+    df_long = df_mean.melt(
+        id_vars=["chip", "group", "x_ticks", "x_tick_labels"],
+        value_vars=feature_cols,
+        var_name="feature",
+        value_name="value",
+    )
+
+    # Calculate summary statistics for each feature, time point, and group
+    df_boxplot_stats = (
+        df_long
+        .groupby(["x_ticks", "x_tick_labels", "group", "feature"], dropna=False)["value"]
+        .agg(
+            median="median",
+            min="min",
+            max="max",
+            count="count",
+        )
+        .reset_index()
+    )
+
+    # Save to CSV
+    stats_path = os.path.join(target_path, "#boxplot_statistics.csv")
+    hd.save_df_as_csv(df_boxplot_stats, stats_path)
 
 def preprocess_and_plot(df, target_path):
     """
@@ -33,11 +58,13 @@ def preprocess_and_plot(df, target_path):
     feature_cols = [col for col in df.columns if col not in non_feature_cols]
     
     # Group by 'chip', 'group', and '"x_ticks"', calculate the mean
-    df_mean = df.groupby(["chip", "group", "x_ticks"], as_index=False)[feature_cols].mean()
+    df_mean = df.groupby(["chip", "group", "x_ticks", "x_tick_labels"], as_index=False)[feature_cols].mean()
     df_mean = df_mean.sort_values(by=["chip", "x_ticks"]).reset_index(drop=True)
 
     full_target_path_all_values = os.path.join(target_path, "#all_values.csv")
     hd.save_df_as_csv(df_mean, full_target_path_all_values)
+
+    _save_boxplot_as_csv(df_mean, feature_cols, target_path)
 
     # simple pairwise test
     if 1:
@@ -46,11 +73,18 @@ def preprocess_and_plot(df, target_path):
 
             # Perform statistical testing
             for day in df_mean["x_ticks"].unique():
-                drug_vals = df_mean[(df_mean["x_ticks"] == day) & (df_mean["group"] == "DRUG")][feature]
-                sham_vals = df_mean[(df_mean["x_ticks"] == day) & (df_mean["group"] == "SHAM")][feature]
-                
-                drug_vals = drug_vals.dropna().to_list()
-                sham_vals = sham_vals.dropna().to_list()
+
+                day_df = df_mean[df_mean["x_ticks"] == day]
+                tick_labels = day_df["x_tick_labels"].dropna().unique()
+                tick_label = tick_labels[0] if len(tick_labels) else np.nan
+
+                drug_vals = day_df.loc[
+                    day_df["group"] == "DRUG", feature
+                ].dropna().to_list()
+
+                sham_vals = day_df.loc[
+                    day_df["group"] == "SHAM", feature
+                ].dropna().to_list()
 
                 if settings.WELLS_SHAM == []:
                     # Wilcoxon signed-rank test (paired)
@@ -61,6 +95,7 @@ def preprocess_and_plot(df, target_path):
                     all_results.append({
                         "feature": feature,
                         "x": day,
+                        "x_tick_labels": tick_label,
                         "p": p_val
                     })
                 else:
@@ -70,6 +105,7 @@ def preprocess_and_plot(df, target_path):
                         all_results.append({
                             "feature": feature,
                             "x": day,
+                            "x_tick_labels": tick_label,
                             "p": p_val
                         })
 
@@ -89,14 +125,14 @@ def preprocess_and_plot(df, target_path):
     df_p = df_p.fillna(1)
 
     # calculate FDR (Benjamini-Hochberg) to correct p-values
-    df_p["p_fdr"] = multipletests(
-        df_p["p"], method="fdr_bh"
-    )[1]
+    #df_p["p_fdr"] = multipletests(
+    #    df_p["p"], method="fdr_bh"
+    #)[1]
 
     # calcualte Bonferroni correction
-    df_p["p_bonf"] = multipletests(
-        df_p["p"], method="bonferroni"
-    )[1]
+    #df_p["p_bonf"] = multipletests(
+    #    df_p["p"], method="bonferroni"
+    #)[1]
 
     # Save p values
     full_target_path_p = os.path.join(target_path, '#p_values' + '.csv')
@@ -120,17 +156,6 @@ def preprocess_and_plot(df, target_path):
         plt.figure(figsize=(10, 6))
         # tab10 is default palette
         palette = "rocket" #"magma" #"viridis"
-        if 0:
-            ax = sns.boxplot(
-                x="x_ticks", y=feature, hue="group", 
-                data=df_mean, 
-                palette=palette,
-                flierprops=dict(marker='.', markersize=4, linestyle='none', markerfacecolor='gray', alpha=0.7),  # small dot outliers
-                boxprops=dict(edgecolor='gray'),   # box border color
-                whiskerprops=dict(color='gray'),   # whisker color
-                capprops=dict(color='gray'),       # cap (end whisker) color
-                medianprops=dict(color='gray')    # median line color
-            )
 
         # --- Clean violin without that tiny embedded box ---
         if 1:
@@ -147,25 +172,7 @@ def preprocess_and_plot(df, target_path):
                 alpha=0.5,
                 cut=0,
             )
-
-        # --- Add proper full-size boxplots on top of the violin ---
-        #sns.boxplot(
-        #    x="x_ticks",
-        #    y=feature,
-        #    hue="group",
-        #    data=df_mean,
-        #    showcaps=False,
-        #    showfliers=False,
-        #    #width=0.2,
-        #    boxprops={'facecolor':'none', 'linewidth':1.5, 'edgecolor':'black'},
-        #    whiskerprops={'linewidth':1.2, 'color':'black'},
-        #    medianprops={'linewidth':1.5, 'color':'black'},
-        #    dodge=True,
-        #    ax=ax
-        #)
-
         
-
         # --- Add raw data points (jittered) ---
         if 1:
             sns.stripplot(

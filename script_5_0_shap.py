@@ -548,19 +548,19 @@ def _save_grouped_shap_summary(
             "feature_group": name,
             "member_features": ", ".join(map(str, members)),
             "mean_feature_value": mean_feature_value,
-            "median_feature_value": median_feature_value,
+            #"median_feature_value": median_feature_value,
             "mean_abs_shap": np.mean(np.abs(sv)) if len(sv) else np.nan,
-            "mean_signed_shap": np.mean(sv) if len(sv) else np.nan,
-            "shap_std": np.std(sv) if len(sv) else np.nan,
-            "percent_shap_positive": (
-                np.mean(sv > 0) * 100 if len(sv) else np.nan
-            ),
-            "percent_shap_negative": (
-                np.mean(sv < 0) * 100 if len(sv) else np.nan
-            ),
-            "mean_shap_low_feature_value": mean_shap_low,
-            "mean_shap_high_feature_value": mean_shap_high,
-            "feature_value_shap_correlation": value_shap_corr,
+            #"mean_signed_shap": np.mean(sv) if len(sv) else np.nan,
+            #"shap_std": np.std(sv) if len(sv) else np.nan,
+            #"percent_shap_positive": (
+            #    np.mean(sv > 0) * 100 if len(sv) else np.nan
+            #),
+            #"percent_shap_negative": (
+            #    np.mean(sv < 0) * 100 if len(sv) else np.nan
+            #),
+            #"mean_shap_low_feature_value": mean_shap_low,
+            #"mean_shap_high_feature_value": mean_shap_high,
+            #"feature_value_shap_correlation": value_shap_corr,
         })
 
     results = pd.DataFrame(rows)
@@ -571,8 +571,6 @@ def _save_grouped_shap_summary(
     ).reset_index(drop=True)
 
     results.insert(0, "rank", np.arange(1, len(results) + 1))
-
-    #results.to_csv(output_path, index=False)
 
     hd.save_df_as_csv(results, output_path)
 

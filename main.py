@@ -41,16 +41,18 @@ if __name__ == '__main__':
         exec(open(os.path.join(os.getcwd(), "script_2_5_calc_connectivity.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_2_6_calc_complex_network.py")).read())
     
-    if 1:    
-        #exec(open(os.path.join(os.getcwd(), "script_3_0_make_feature_set.py")).read())
-        #exec(open(os.path.join(os.getcwd(), "script_3_1_preprocess_feature_set.py")).read())
+    if 0:    
+        exec(open(os.path.join(os.getcwd(), "script_3_0_make_feature_set.py")).read())
+        exec(open(os.path.join(os.getcwd(), "script_3_1_preprocess_feature_set.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_6_0_statistics.py")).read())
     
-    if 1:
-        #exec(open(os.path.join(os.getcwd(), "script_4_0_machine_learning.py")).read())
-        #exec(open(os.path.join(os.getcwd(), "script_4_1_find_best_result.py")).read())
+    if 0:
+        exec(open(os.path.join(os.getcwd(), "script_4_0_machine_learning.py")).read())
+        exec(open(os.path.join(os.getcwd(), "script_4_1_find_best_result.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_4_2_plot_ml.py")).read())
         exec(open(os.path.join(os.getcwd(), "script_5_0_shap.py")).read())
+    if 1:
+        exec(open(os.path.join(os.getcwd(), "script_7_summarize_csv_files.py")).read())
     
     
     
